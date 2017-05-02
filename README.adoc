@@ -1,0 +1,3 @@
+== Parks Map multi-service Application
+
+See the individual applications for instructions / hints on how to set up this application on OpenShift.
