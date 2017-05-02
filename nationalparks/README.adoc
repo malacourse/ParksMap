@@ -1,27 +1,50 @@
-= NationalParks backend application
-This application is a backend that provides geolocation information about NationalParks. The information is stored in a mongodb
+== National Parks backend application
 
+This application is a backend that provides geolocation information about US National Parks. It is a SpringBoot application.
 
-== Installation
-As the application needs to interact with openshift's API, you'll need to provide some permissions to the default ServiceAccount for that.
+=== Prerequisites
 
-Assuming you're using the project <roadshow>:
+* The information is stored in a MongoDB. Therefore a MongoDB instance with persistent storage needs to be set up.
+* The following Environment Variables need to be configured:
+** MONGODB_SERVER_HOST
+** MONGODB_SERVER_PORT
+** MONGODB_USER
+** MONGODB_PASSWORD
+** MONGODB_DATABASE
+// * Additional properties:
+// ** db.properties: db.user=${MONGODB_USER}\ndb.password=${MONGODB_PASSWORD}\ndb.name=${MONGODB_DATABASE}
+// ** application.properties: spring.data.mongodb.uri=mongodb://${MONGODB_USER}:${MONGODB_PASSWORD}@${MONGODB_APPLICATION_NAME}:27017/${MONGODB_DATABASE}
+* After installation the following URL loads the default data:
+** <route_url>/ws/data/load
+* The running service maintains a REST endpoint to be discovered at <route_url>/ws/info/
+* There is a health check endpoint at <route_url>/healthz
 
+=== Hints
+
+* Use the OpenJDK 1.8 S2I builder image
+* You can set MAVEN_MIRROR_URL as a build environment variable to point to a local artifact repository
+* You may want to set up a post deployment hook to automatically load the data after deployment
+* You may want to create readiness and liveness probes.
+
+=== Additional API Endpoints
+
+* Add:
++
+[source,bash]
 ----
-oc new-project roadshow
-oc policy add-role-to-user view system:serviceaccount:roadshow:default
-oc create -f ./ose3/application-template.json
-oc new-app nationalparks
+curl -i -X POST -H 'Content-Type: application/json' -d '{"name":"nationalparks","displayName":"National Parks","url":"", "center":{"latitude": "0", "longitude":"0"},"zoom":"1"}' http://parksmap.apps.127.0.0.01.xip.io/ws/backends/
 ----
 
-There's some options that can be parameterized:
-
-* APPLICATION_NAME: Name of the application
-* MAVEN_MIRROR_URL: Url of a maven mirror 
-* APPLICATION_HOSTNAME: Hostname/route to access your application
-
-Example:
-
+* Delete:
++
+[source,bash]
 ----
-oc new-app nationalparks -p APPLICATION_HOSTNAME=nationalparks-roadshow.127.0.0.1.xip.io -p MAVEN_MIRROR_URL=http://nexus.ci:8081/content/groups/public
+curl -i -X DELETE -H 'Content-Type: application/json' -d '{"name":"nationalparks","displayName":"National Parks","url":"", "center":{"latitude": "0", "longitude":"0"},"zoom":1}' http://parksmap.apps.127.0.0.01.xip.io/ws/backends/
+----
+
+* List:
++
+[source,bash]
+----
+curl -i -X GET -H 'Content-Type: application/json'  http://parksmap.apps.127.0.0.1.xip.io/ws/backends/
 ----
