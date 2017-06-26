@@ -41,11 +41,11 @@ public class MongoDBConnection {
 
     @PostConstruct
     public void initConnection() {
-        String mongoHost = env.getProperty("mongodb.server.host", "127.0.0.1"); // env var MONGODB_SERVER_HOST takes precedence
-        String mongoPort = env.getProperty("mongodb.server.port", "27017"); // env var MONGODB_SERVER_PORT takes precedence
-        String mongoUser = env.getProperty("mongodb.user", "mongodb"); // env var MONGODB_USER takes precedence
-        String mongoPassword = env.getProperty("mongodb.password", "mongodb"); // env var MONGODB_PASSWORD takes precedence
-        String mongoDBName = env.getProperty("mongodb.database", "mongodb"); // env var MONGODB_DATABASE takes precedence
+        String mongoHost = env.getProperty("DB_HOST", "127.0.0.1"); // env var MONGODB_SERVER_HOST takes precedence
+        String mongoPort = env.getProperty("DB_PORT", "27017"); // env var MONGODB_SERVER_PORT takes precedence
+        String mongoUser = env.getProperty("DB_USERNAME", "mongodb"); // env var MONGODB_USER takes precedence
+        String mongoPassword = env.getProperty("DB_PASSWORD", "mongodb"); // env var MONGODB_PASSWORD takes precedence
+        String mongoDBName = env.getProperty("DB_NAME", "mongodb"); // env var MONGODB_DATABASE takes precedence
 
         try {
             String mongoURI = "mongodb://" + mongoUser + ":" + mongoPassword + "@" + mongoHost + ":" + mongoPort + "/" + mongoDBName;
