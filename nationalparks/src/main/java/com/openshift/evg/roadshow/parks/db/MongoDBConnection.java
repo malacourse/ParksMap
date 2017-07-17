@@ -22,7 +22,7 @@ import java.util.List;
  * Created by jmorales on 11/08/16.
  */
 @Component
-public class MongoDBConnection {
+public class MongoDBConnection extends DBConnection{
 
     private static final String FILENAME = "/nationalparks.json";
 
@@ -56,61 +56,6 @@ public class MongoDBConnection {
             System.out.println("[ERROR] Creating the mongoDB. " + e.getMessage());
             mongoDB = null;
         }
-    }
-
-    /*
-     * Load from embedded list of parks using FILENAME
-     */
-    public List<Document> loadParks() {
-        System.out.println("[DEBUG] MongoDBConnection.loadParks()");
-
-        try {
-            return loadParks(resourceLoader.getResource(ResourceLoader.CLASSPATH_URL_PREFIX + FILENAME).getInputStream());
-        } catch (Exception e) {
-            e.printStackTrace();
-            System.out.println("Error loading parks. Return empty list. " + e.getMessage());
-        }
-        return new ArrayList<Document>();
-    }
-
-    public List<Document> loadParks(String fileLocation) {
-        System.out.println("[DEBUG] MongoDBConnection.loadParks(" + fileLocation + ")");
-
-        try {
-            return loadParks(new FileInputStream(new File(fileLocation)));
-        } catch (Exception e) {
-            e.printStackTrace();
-            System.out.println("Error loading parks. Return empty list. " + e.getMessage());
-        }
-        return new ArrayList<Document>();
-    }
-
-    public List<Document> loadParks(InputStream is) {
-        System.out.println("[DEBUG] MongoDBConnection.loadParks(InputStream)");
-
-        List<Document> docs = new ArrayList<Document>();
-        BufferedReader in = new BufferedReader(new InputStreamReader(is));
-        try {
-            String currentLine = null;
-            int i = 1;
-            while ((currentLine = in.readLine()) != null) {
-                String s = currentLine.toString();
-                // System.out.println("line "+ i++ + ": " + s);
-                Document doc = Document.parse(s);
-                docs.add(doc);
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-            System.out.println("Error loading parks. Return empty list. " + e.getMessage());
-        } finally {
-            try {
-                is.close();
-            } catch (IOException e) {
-                e.printStackTrace();
-                System.out.println("Error loading parks. Return empty list");
-            }
-        }
-        return docs;
     }
 
 

@@ -1,6 +1,7 @@
 package com.openshift.evg.roadshow.parks.rest;
 
 import com.mongodb.BasicDBObject;
+import com.openshift.evg.roadshow.parks.db.DBConnection;
 import com.openshift.evg.roadshow.parks.db.MongoDBConnection;
 import com.openshift.evg.roadshow.parks.model.Park;
 import org.bson.Document;
@@ -15,11 +16,11 @@ import java.util.List;
 @RestController
 public class Parks {
 
-    private final MongoDBConnection con;
+    private final DBConnection con;
 
 
     @Autowired
-    public Parks(MongoDBConnection connection) {
+    public Parks(DBConnection connection) {
         this.con = connection;
     }
 
