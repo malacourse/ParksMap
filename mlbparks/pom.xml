@@ -10,6 +10,10 @@
         <maven.compiler.source>1.8</maven.compiler.source>
         <maven.compiler.target>1.8</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+
+               <!-- test dependencies versions -->
+                <junit.version>4.8.2</junit.version>
+
     </properties>
 
     <dependencies>
@@ -25,7 +29,16 @@
             <artifactId>mongo-java-driver</artifactId>
             <version>3.2.2</version>
         </dependency>
+        <dependency>
+           <groupId>junit</groupId>
+           <artifactId>junit</artifactId>
+           <version>${junit.version}</version>
+        </dependency>
+        
+         
     </dependencies>
+    
+       
     <build>
         <finalName>${project.artifactId}</finalName>
         <pluginManagement>
@@ -42,4 +55,5 @@
             </plugins>
         </pluginManagement>
     </build>
+    
 </project>

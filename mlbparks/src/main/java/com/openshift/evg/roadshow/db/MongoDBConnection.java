@@ -12,14 +12,13 @@ import com.openshift.evg.roadshow.model.DataPoint;
 import com.openshift.evg.roadshow.model.MLBPark;
 import org.bson.Document;
 
-import java.io.*;
 import java.util.ArrayList;
 import java.util.List;
 
 /**
  * Created by jmorales on 11/08/16.
  */
-public class MongoDBConnection {
+public class MongoDBConnection extends DBConnection{
 
     private static final String FILENAME = "/mlbparks.json";
 
@@ -31,8 +30,10 @@ public class MongoDBConnection {
     String dbUsername = System.getenv("DB_USERNAME");
     String dbPassword = System.getenv("DB_PASSWORD");
     String dbName = System.getenv("DB_NAME");
-
-    public MongoDatabase connect() {
+    
+    MongoDatabase db = null;
+    
+    public void connect() {
         System.out.println("[DEBUG] MongoDBConnection.connect()");
 
         List<MongoCredential> creds = new ArrayList<MongoCredential>();
@@ -69,54 +70,7 @@ public class MongoDBConnection {
         creds.add(MongoCredential.createCredential(dbUsername, dbName, dbPassword.toCharArray()));
 
         MongoClient mongoClient = new MongoClient(new ServerAddress(dbHost, Integer.valueOf(dbPort)), creds);
-        MongoDatabase database = mongoClient.getDatabase(dbName);
-
-        return database;
-    }
-
-    /*
-     * Load from embedded list of parks using FILENAME
-     */
-    public List<Document> loadParks() {
-        System.out.println("[DEBUG] MongoDBConnection.loadParks()");
-
-        List<Document> docs = new ArrayList<Document>();
-
-        try {
-            docs.addAll(loadParks(getClass().getClassLoader().getResourceAsStream(FILENAME)));
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        return docs;
-    }
-
-
-    public List<Document> loadParks(String fileLocation) {
-        System.out.println("[DEBUG] MongoDBConnection.loadParks(" + fileLocation + ")");
-
-        List<Document> docs = new ArrayList<Document>();
-        try {
-            docs.addAll(loadParks(new FileInputStream(new File(fileLocation))));
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        return docs;
-    }
-
-    public List<Document> loadParks(InputStream is) {
-        System.out.println("[DEBUG] MongoDBConnection.loadParks(InputStream)");
-        List<Document> docs = new ArrayList<Document>();
-        String currentLine = null;
-
-        BufferedReader in = new BufferedReader(new InputStreamReader(is));
-        try {
-            while ((currentLine = in.readLine()) != null) {
-                docs.add(Document.parse(currentLine.toString()));
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        return docs;
+        db = mongoClient.getDatabase(dbName);
     }
 
 
@@ -128,10 +82,10 @@ public class MongoDBConnection {
     }
 
 
-    public void init(MongoDatabase database, List<Document> parks) {
+    public void init(List<Document> parks) {
         System.out.println("[DEBUG] MongoDBConnection.init(...)");
 
-        MongoCollection<Document> collection = database.getCollection(COLLECTION);
+        MongoCollection<Document> collection = db.getCollection(COLLECTION);
 
         System.out.println("Items before insert: " + collection.count());
         if (collection.count() != 0) {
@@ -143,8 +97,8 @@ public class MongoDBConnection {
         System.out.println("Items after insert: " + collection.count());
     }
 
-    public long sizeInDB(MongoDatabase database) {
-        MongoCollection<Document> collection = database.getCollection(COLLECTION);
+    public long sizeInDB() {
+        MongoCollection<Document> collection = db.getCollection(COLLECTION);
         return collection.count();
     }
 
@@ -182,11 +136,11 @@ public class MongoDBConnection {
         return dataPoints;
     }
 
-    public List<DataPoint> getByQuery(MongoDatabase database, BasicDBObject query) {
+    public List<DataPoint> getByQuery(BasicDBObject query) {
         System.out.println("[DEBUG] MongoDBConnection.getByQuery()");
 
         int i = 0;
-        FindIterable<Document> iterable = this.getCollection(database).find(query);
+        FindIterable<Document> iterable = this.getCollection(db).find(query);
         List<DataPoint> dataPoints = new ArrayList<DataPoint>();
         for (Document current : iterable) {
             DataPoint dataPoint = getPark(current);
@@ -196,37 +150,17 @@ public class MongoDBConnection {
         return dataPoints;
     }
 
-    /**
-     * @param current
-     * @return
-     */
-    public DataPoint getPark(Document current) {
-        MLBPark park = new MLBPark();
-        park.setId(current.getObjectId("_id").toString());
-        park.setName(current.getString("name"));
-        park.setBallpark(current.getString("ballpark"));
-
-        Coordinates cord = new Coordinates(current.get("coordinates", List.class));
-        park.setPosition(cord);
-        park.setLatitude(cord.getLatitude());
-        park.setLongitude(cord.getLongitude());
-
-        park.setLeague(current.getString("league"));
-        park.setPayroll(current.getInteger("payroll"));
-
-        return park;
-    }
 
 
     public static void main(String[] args) {
         MongoDBConnection con = new MongoDBConnection();
         List<Document> parks = con.loadParks("/Users/jmorales/repositories/jorgemoralespou/openshift/roadshow-mongodb/parks-mongo/src/main/resources/parks.json");
-        MongoDatabase db = con.connect();
-        con.init(db, parks);
-        System.out.println("Number of national parks in the DB: " + con.sizeInDB(db));
+        con.connect();
+        con.init(parks);
+        System.out.println("Number of national parks in the DB: " + con.sizeInDB());
 
         System.out.println("Get list of parks in DB");
-        List<DataPoint> dataPointList = con.getAll(db);
+        List<DataPoint> dataPointList = con.getAll();
         for (DataPoint dataPoint : dataPointList) {
             System.out.println("DataPoint: " + dataPoint.toString());
         }

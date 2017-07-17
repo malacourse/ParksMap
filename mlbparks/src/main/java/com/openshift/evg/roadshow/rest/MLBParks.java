@@ -2,6 +2,8 @@ package com.openshift.evg.roadshow.rest;
 
 import com.mongodb.BasicDBObject;
 import com.mongodb.client.MongoDatabase;
+import com.openshift.evg.roadshow.db.ConnectionFactory;
+import com.openshift.evg.roadshow.db.DBConnection;
 import com.openshift.evg.roadshow.db.MongoDBConnection;
 import com.openshift.evg.roadshow.model.DataPoint;
 import org.bson.Document;
@@ -20,7 +22,8 @@ import java.util.List;
 @Path("/data")
 public class MLBParks {
 
-    MongoDBConnection con = new MongoDBConnection();
+    //MongoDBConnection con = new MongoDBConnection();
+    //DBConnection con = ConnectionFactory.connect();
 
     //@Inject
     //private DBConnection dbConnection;
@@ -29,12 +32,14 @@ public class MLBParks {
     @Path("/load")
     public String load() {
         System.out.println("[INFO] load()");
-        MongoDBConnection con = new MongoDBConnection();
+        //MongoDBConnection con = new MongoDBConnection();
+        DBConnection con = ConnectionFactory.connect();
         List<Document> parks = con.loadParks();
         try {
-            MongoDatabase db = con.connect();
-            con.init(db, parks);
-            return "Items inserted in database: " + con.sizeInDB(db);
+            //MongoDatabase db = con.connect();
+            con.connect();
+            con.init(parks);
+            return "Items inserted in database: " + con.sizeInDB();
         }catch(Exception e){
             System.out.println("[ERROR] Connecting to database");
         }
@@ -47,10 +52,10 @@ public class MLBParks {
     public List<? extends DataPoint> getAllDataPoints(@Context HttpServletResponse response) {
         System.out.println("[DEBUG] getAllDataPoints");
 
-        MongoDBConnection con = new MongoDBConnection();
         try {
-            MongoDatabase db = con.connect();
-            return con.getAll(db);
+            //MongoDBConnection con = new MongoDBConnection();
+            DBConnection con = ConnectionFactory.connect();
+            return con.getAll();
         }catch(Exception e){
             System.out.println("[ERROR] Connecting to database");
         }
@@ -67,9 +72,9 @@ public class MLBParks {
         System.out.println("[DEBUG] findDataPointsWithin(" + lat1 + "," + lon1 + "," + lat2 + "," + lon2 + ")");
 
 
-        MongoDBConnection con = new MongoDBConnection();
         try{
-            MongoDatabase db = con.connect();
+            //MongoDBConnection con = new MongoDBConnection();
+            DBConnection con = ConnectionFactory.connect();
 
             // make the query object
             BasicDBObject spatialQuery = new BasicDBObject();
@@ -85,7 +90,7 @@ public class MLBParks {
             System.out.println("Using spatial query: " + spatialQuery.toString());
 
 
-            return con.getByQuery(db, spatialQuery);
+            return con.getByQuery(spatialQuery);
         }catch(Exception e){
             System.out.println("[ERROR] Connecting to database");
         }
