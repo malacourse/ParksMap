@@ -21,7 +21,6 @@ import java.util.List;
 /**
  * Created by jmorales on 11/08/16.
  */
-@Component
 public class DBConnection {
 
     private static final String FILENAME = "nationalparks.json";

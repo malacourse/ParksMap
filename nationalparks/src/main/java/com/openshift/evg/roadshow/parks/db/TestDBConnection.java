@@ -9,7 +9,6 @@ import org.springframework.core.io.ResourceLoader;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
-import java.io.*;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -17,7 +16,6 @@ import java.util.List;
 /**
  * Created by jmorales on 11/08/16.
  */
-@Component
 public class TestDBConnection extends DBConnection{
 
     private static final String FILENAME = "nationalparks.json";
