@@ -27,6 +27,8 @@ public class RouteWatcher extends AbstractResourceWatcher<Route> {
 
 	@Override
 	protected String getUrl(String routeName) {
+		List<Route> r1 = getOpenShiftClient().routes().inNamespace(getNamespace()).list().getItems();
+		logger.info(r1.toString());
 		List<Route> routes = getOpenShiftClient().routes().inNamespace(getNamespace()).withLabel(PARKSMAP_BACKEND_LABEL)
 				.withField("metadata.name", routeName).list().getItems();
 		if (routes.isEmpty()) {
