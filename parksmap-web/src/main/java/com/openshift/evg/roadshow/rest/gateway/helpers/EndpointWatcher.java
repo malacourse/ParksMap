@@ -60,10 +60,10 @@ public class EndpointWatcher implements Watcher<Endpoints> {
         }else
             return false;
 
-    }
+    } 
 
     private int getEndpointsAddressSize(Endpoints endpoints){
-        if (endpoints.getSubsets().size()>0)
+        if (endpoints != null && endpoints.getSubsets() != null &&  endpoints.getSubsets().size()>0)
             return endpoints.getSubsets().get(0).getAddresses().size();
         else
             return 0;
