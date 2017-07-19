@@ -7,7 +7,7 @@ node('maven') {
   // Nexus installation. The file nexus_openshift_settings.xml needs to be in the
   // Source Code repository.
   //def mvnCmd = "mvn -s ./nexus_openshift_settings.xml"
-  def mvnCmd = "cd ./mlbparks;pwd;mvn"
+  def mvnCmd = "cd ./mlbparks;pwd;mvn -s ../nexus_settings.xml"
   def sonarArgs = " sonar:sonar -Dsonar.host.url=http://sonarqube-mal-gogs.apps.na1.openshift.opentlc.com"
   def mvnRelUrl = "http://nexus3-mal-nexus.apps.na1.openshift.opentlc.com/repository/releases/"
   
