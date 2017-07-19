@@ -17,7 +17,6 @@ node('maven') {
     // Next line for inline script, "checkout scm" for Jenkinsfile from Gogs
     //git 'http://gogs.xyz-gogs.svc.cluster.local:3000/CICDLabs/openshift-tasks.git'
     checkout scm
-    sh "cd mlbparks"
   }
 
   // The following variables need to be defined at the top level and not inside
@@ -31,6 +30,7 @@ node('maven') {
   // Do not run tests in this step
   stage('Build war') {
     sh "cd mlbparks"
+    sh "pwd"
     sh mvnCmd + " -Dmaven.test.skip=true clean package"
   }
 
