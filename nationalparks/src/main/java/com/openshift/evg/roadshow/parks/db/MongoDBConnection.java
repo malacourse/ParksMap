@@ -17,6 +17,7 @@ import javax.annotation.PostConstruct;
 import java.io.*;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Properties;
 
 /**
  * Created by jmorales on 11/08/16.
@@ -35,6 +36,7 @@ public class MongoDBConnection extends DBConnection{
     private Environment env;
 
     private MongoDatabase mongoDB = null;
+    private static final String PROPERTIES = "/etc/config/parksmap.properties";
 
     public MongoDBConnection() {
     }
@@ -47,6 +49,21 @@ public class MongoDBConnection extends DBConnection{
         String mongoPassword = env.getProperty("DB_PASSWORD", "mongodb"); // env var MONGODB_PASSWORD takes precedence
         String mongoDBName = env.getProperty("DB_NAME", "mongodb"); // env var MONGODB_DATABASE takes precedence
 
+        Properties props = new Properties();
+        try {
+			props.load(new FileInputStream(PROPERTIES));
+			mongoHost = props.getProperty("DB_HOST");
+			mongoPort = props.getProperty("DB_PORT");
+			mongoUser = props.getProperty("DB_USERNAME");
+			mongoPassword = props.getProperty("DB_PASSWORD");
+			mongoDBName = props.getProperty("DB_NAME");
+		} catch (FileNotFoundException e) {
+			e.printStackTrace();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+        
+        
         try {
             String mongoURI = "mongodb://" + mongoUser + ":" + mongoPassword + "@" + mongoHost + ":" + mongoPort + "/" + mongoDBName;
             System.out.println("[INFO] Connection string: " + mongoURI);
