@@ -30,19 +30,19 @@ node('maven') {
   // Using Maven build the war file
   // Do not run tests in this step
   stage('Build war') {
-    sh "ls -lrt"
+    sh "cd mlbparks"
     sh mvnCmd + " -Dmaven.test.skip=true clean package"
-    // TBD
   }
 
   // Using Maven run the unit tests
   stage('Unit Tests') {
-    // TBD
+    sh "cd mlbparks"
+    sh mvnCmd + " test"
   }
 
   // Using Maven call SonarQube for Code Analysis
   stage('Code Analysis') {
-    // TBD
+    //sh mvnCmd + sonarArgs
   }
 
   // Publish the latest war file to Nexus. This needs to go into <nexusurl>/repository/releases.
