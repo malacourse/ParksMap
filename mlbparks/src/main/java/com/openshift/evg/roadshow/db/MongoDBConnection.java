@@ -12,15 +12,19 @@ import com.openshift.evg.roadshow.model.DataPoint;
 import com.openshift.evg.roadshow.model.MLBPark;
 import org.bson.Document;
 
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Properties;
 
 /**
  * Created by jmorales on 11/08/16.
  */
 public class MongoDBConnection extends DBConnection{
 
-    private static final String FILENAME = "/mlbparks.json";
+    private static final String PROPERTIES = "/etc/config/parksmap.properties";
 
     private static final String COLLECTION = "parks";
 
@@ -35,6 +39,20 @@ public class MongoDBConnection extends DBConnection{
     
     public void connect() {
         System.out.println("[DEBUG] MongoDBConnection.connect()");
+        
+        Properties props = new Properties();
+        try {
+			props.load(new FileInputStream(PROPERTIES));
+		    dbHost = props.getProperty("DB_HOST");
+		    dbPort = props.getProperty("DB_PORT");
+		    dbUsername = props.getProperty("DB_USERNAME");
+		    dbPassword = props.getProperty("DB_PASSWORD");
+		    dbName = props.getProperty("DB_NAME");
+		} catch (FileNotFoundException e) {
+			e.printStackTrace();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
 
         List<MongoCredential> creds = new ArrayList<MongoCredential>();
 
