@@ -5,8 +5,8 @@ public class ConnectionFactory {
 	public static DBConnection connect()
 	{
 		try {
-		    String dbHost = System.getenv("DB_HOST");
-	        if (dbHost == null || dbHost.equals("")) {
+		    String dbType = System.getenv("DB_TYPE");
+	        if (dbType == null || dbType.equals("")) {
 	        	return new TestConnection();
 	        }
 	        else
