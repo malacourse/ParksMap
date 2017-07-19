@@ -17,19 +17,21 @@ node('maven') {
     // Next line for inline script, "checkout scm" for Jenkinsfile from Gogs
     //git 'http://gogs.xyz-gogs.svc.cluster.local:3000/CICDLabs/openshift-tasks.git'
     checkout scm
-    sh "ls -lrt"
+    sh "cd mlbparks"
   }
 
   // The following variables need to be defined at the top level and not inside
   // the scope of a stage - otherwise they would not be accessible from other stages.
   // Extract version and other properties from the pom.xml
-  def groupId    = getGroupIdFromPom("pom.xml")
-  def artifactId = getArtifactIdFromPom("pom.xml")
-  def version    = getVersionFromPom("pom.xml")
+  def groupId    = getGroupIdFromPom("mlbparks/pom.xml")
+  def artifactId = getArtifactIdFromPom("mlbparks/pom.xml")
+  def version    = getVersionFromPom("mlbparks/pom.xml")
 
   // Using Maven build the war file
   // Do not run tests in this step
   stage('Build war') {
+    sh "ls -lrt"
+    sh mvnCmd + " -Dmaven.test.skip=true clean package"
     // TBD
   }
 
