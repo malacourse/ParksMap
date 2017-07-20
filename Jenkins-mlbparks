@@ -62,7 +62,7 @@ node('maven') {
   stage('Publish to Nexus') {
     echo "Current Version:" + version
     def newCmd = mvnCmd + " deploy:deploy-file -Durl=" + mvnRelUrl 
-    newCmd = newCmd + " -Dfile=target/openshift-tasks.war -DartifactId=" + artifactId + " -DgroupId="
+    newCmd = newCmd + " -Dfile=target/mlbparks.war -DartifactId=" + artifactId + " -DgroupId="
     newCmd = newCmd + groupId + " -Dversion=" + version + " -DrepositoryId=nexus"
     echo "cmd :" + newCmd
     sh newCmd
