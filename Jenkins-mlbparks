@@ -79,7 +79,7 @@ node('maven') {
     // Update the Git/Gogs repository with the latest file
     // Replace XYZ with your Initials
     def commit = "Release " + version
-    sh "ls -lrt;git add mlbparks/s2i-build/.s2i/environment; git status; git commit -m \"${commit}\"; git push origin master"
+    sh "git config --global user.name 'malacourse';git add mlbparks/s2i-build/.s2i/environment; git branch; git commit -m \"${commit}\"; git push origin HEAD:master"
     echo "Push to Nexus Done"  
 
   }
