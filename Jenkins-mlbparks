@@ -65,7 +65,7 @@ node('maven') {
     newCmd = newCmd + " -Dfile=target/openshift-tasks.war -DartifactId=" + artifactId + " -DgroupId="
     newCmd = newCmd + groupId + " -Dversion=" + version + " -DrepositoryId=nexus"
     echo "cmd :" + newCmd
-    //sh newCmd
+    sh newCmd
     
     echo "Done Deploy"
     
@@ -74,7 +74,7 @@ node('maven') {
     
     sh "echo ${warFileName}/${version}/${artifactId}-${version}.war"
     sh "echo WAR_FILE_LOCATION=" + mvnRelUrl + "/${warFileName}/${version}/${artifactId}-${version}.war > mlbparks/s2i-build/.s2i/environment"
-    sh "echo BUILD_NUMBER=${BUILD_NUMBER} >> .mlbparks/s2i-build/s2i/environment"
+    sh "echo BUILD_NUMBER=${BUILD_NUMBER} >> mlbparks/s2i-build/.s2i/environment"
 
     // Update the Git/Gogs repository with the latest file
     // Replace XYZ with your Initials
