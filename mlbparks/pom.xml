@@ -49,7 +49,7 @@
                     <version>2.6</version>
                     <configuration>
                         <failOnMissingWebXml>false</failOnMissingWebXml>
-                        <warName>ROOT</warName>
+                      <!-- <warName>ROOT</warName> -->
                     </configuration>
                 </plugin>
             </plugins>
