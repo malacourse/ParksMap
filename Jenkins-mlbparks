@@ -15,7 +15,7 @@ node('maven') {
   stage('Checkout Source') {
     // Get Source Code from SCM (Git) as configured in the Jenkins Project
     // Next line for inline script, "checkout scm" for Jenkinsfile from Gogs
-    //git 'http://gogs.xyz-gogs.svc.cluster.local:3000/CICDLabs/openshift-tasks.git'
+    //git 'http://gogs.xyz-gogs.svc.cluster.local:3000/CICDLabs/openshift-mlbparks.git'
     checkout scm
   }
 
@@ -54,7 +54,7 @@ node('maven') {
   // When doing a binary build you are done.
   // 
   // When doing a build with external artifacts (not binary build) you will also need to do the following:
-  // - Update the Gogs project openshift-tasks-ocp by editing the .s2i/environment file. This file needs to have a line
+  // - Update the Gogs project openshift-mlbparks-ocp by editing the .s2i/environment file. This file needs to have a line
   //   WAR_FILE_LOCATION=<actual URL of the war file in nexus>
   // - It is also a good idea to add another line like "BUILD_NUMBER=${BUILD_NUMBER}" to the environment file. Otherwise the
   //   push to Gig/Gogs will fail in case the version number didn't change. ${BUILD_NUMBER} is one of the Jenkins built-in
@@ -73,7 +73,7 @@ node('maven') {
     warFileName = warFileName.replace('.', '/')
     
     sh "echo ${warFileName}/${version}/${artifactId}-${version}.war"
-    sh "echo WAR_FILE_LOCATION=" + mvnRelUrl + "/${warFileName}/${version}/${artifactId}-${version}.war > mlbparks/s2i-build/.s2i/environment"
+    sh "echo WAR_FILE_LOCATION=" + mvnRelUrl + "${warFileName}/${version}/${artifactId}-${version}.war > mlbparks/s2i-build/.s2i/environment"
     sh "echo BUILD_NUMBER=${BUILD_NUMBER} >> mlbparks/s2i-build/.s2i/environment"
 
     // Update the Git/Gogs repository with the latest file
@@ -85,14 +85,14 @@ node('maven') {
   }
 
   // Build the OpenShift Image in OpenShift. 
-  // 1. When doing a binary build make sure to rename the file ./target/openshift-tasks.war to ROOT.war before you start the build.
-  // 2. When doing a build with external artifacts make sure to use the build configuration pointing to openshift-tasks-ocp
+  // 1. When doing a binary build make sure to rename the file ./target/openshift-mlbparks.war to ROOT.war before you start the build.
+  // 2. When doing a build with external artifacts make sure to use the build configuration pointing to openshift-mlbparks-ocp
   //    for the .s2i/bin/assemble script to retrieve the war file from the location in the .s2i/environment file.
   // Also tag the image with "TestingCandidate-${version}" - e.g. TestingCandidate-1.5
   stage('Build OpenShift Image') {
       def newTag = "TestReady-${version}"
       echo "New Tag: ${newTag}"
-      // Replace xyz-tasks-dev with the name of your dev project
+      // Replace xyz-mlbparks-dev with the name of your dev project
       openshiftBuild bldCfg: 'mlbparks', checkForTriggeredDeployments: 'false', namespace: 'adv-dev-hw', showBuildLogs: 'false', verbose: 'false', waitTime: '', waitUnit: 'sec'
       openshiftVerifyBuild bldCfg: 'mlbparks', checkForTriggeredDeployments: 'false', namespace: 'adv-dev-hw', verbose: 'false', waitTime: ''
       openshiftTag alias: 'false', destStream: 'mlbparks', destTag: newTag, destinationNamespace: 'adv-dev-hw', namespace: 'adv-dev-hw', srcStream: 'mlbparks', srcTag: 'latest', verbose: 'false'  
@@ -100,16 +100,16 @@ node('maven') {
 
   stage('Deploy to Dev') {
     // Patch the DeploymentConfig so that it points to the latest TestingCandidate-${version} Image.
-    // Replace xyz-tasks-dev with the name of your dev project
-    sh "oc project mal-tasks-dev"
-    sh "oc patch dc tasks --patch '{\"spec\": { \"triggers\": [ { \"type\": \"ImageChange\", \"imageChangeParams\": { \"containerNames\": [ \"tasks\" ], \"from\": { \"kind\": \"ImageStreamTag\", \"namespace\": \"mal-tasks-dev\", \"name\": \"tasks:Candidate-$version\"}}}]}}' -n mal-tasks-dev"
+    // Replace xyz-mlbparks-dev with the name of your dev project
+    sh "oc project adv-dev-hw"
+    sh "oc patch dc mlbparks --patch '{\"spec\": { \"triggers\": [ { \"type\": \"ImageChange\", \"imageChangeParams\": { \"containerNames\": [ \"mlbparks\" ], \"from\": { \"kind\": \"ImageStreamTag\", \"namespace\": \"adv-dev-hw\", \"name\": \"mlbparks:Candidate-$version\"}}}]}}' -n adv-dev-hw"
 
-      openshiftDeploy depCfg: 'tasks', namespace: 'mal-tasks-dev', verbose: 'false', waitTime: '', waitUnit: 'sec'
-      openshiftVerifyDeployment depCfg: 'tasks', namespace: 'mal-tasks-dev', replicaCount: '1', verbose: 'false', verifyReplicaCount: 'false', waitTime: '', waitUnit: 'sec'
-      openshiftVerifyService namespace: 'mal-tasks-dev', svcName: 'tasks', verbose: 'false'  
+      openshiftDeploy depCfg: 'mlbparks', namespace: 'adv-dev-hw', verbose: 'false', waitTime: '', waitUnit: 'sec'
+      openshiftVerifyDeployment depCfg: 'mlbparks', namespace: 'adv-dev-hw', replicaCount: '1', verbose: 'false', verifyReplicaCount: 'false', waitTime: '', waitUnit: 'sec'
+      openshiftVerifyService namespace: 'adv-dev-hw', svcName: 'mlbparks', verbose: 'false'  
    }
 
-  // Run some integration tests (see the openshift-tasks Github Repository README.md for ideas).
+  // Run some integration tests (see the openshift-mlbparks Github Repository README.md for ideas).
   // Once the tests succeed tag the image as ProdReady-${version}
   stage('Integration Test') {
     // TBD
