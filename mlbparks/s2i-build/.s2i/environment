@@ -1,0 +1,2 @@
+WAR_FILE_LOCATION=http://nexus3.nexus.svc.cluster.local:8081/repository/releases/com/openshift/evg/roadshow/1.0/mlbparks-1.0.war
+

@@ -21,7 +21,7 @@
                 <repository>
                     <id>nexus-public-all</id>
                     <name>Nexus Public repository (all)</name>
-                    <url>http://nexus-opentlc-shared.cloudapps.na.openshift.opentlc.com/content/groups/public</url>
+                    <url>http://nexus3-jenkins.192.168.99.100.nip.io/repository/maven-public/</url>
                     <layout>default</layout>
                     <releases>
                         <enabled>true</enabled>
@@ -37,7 +37,7 @@
                 <pluginRepository>
                     <id>nexus-public-all</id>
                     <name>Nexus Public repository (all)</name>
-                    <url>http://nexus-opentlc-shared.cloudapps.na.openshift.opentlc.com/content/groups/public</url>
+                    <url>http://nexus3-jenkins.192.168.99.100.nip.io/repository/maven-public/</url>
                     <layout>default</layout>
                     <releases>
                         <enabled>true</enabled>

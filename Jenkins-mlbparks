@@ -9,7 +9,7 @@ node('maven') {
   //def mvnCmd = "mvn -s ./nexus_openshift_settings.xml"
   def mvnCmd = "cd ./mlbparks;pwd;mvn -s ../nexus_settings.xml"
   def sonarArgs = " sonar:sonar -Dsonar.host.url=http://sonarqube-mal-gogs.apps.na1.openshift.opentlc.com"
-  def mvnRelUrl = "http://nexus3-mal-nexus.apps.na1.openshift.opentlc.com/repository/releases/"
+  def mvnRelUrl = "http://nexus3-jenkins.192.168.99.100.nip.io/repository/releases/"
   
 
   stage('Checkout Source') {
@@ -60,7 +60,28 @@ node('maven') {
   //   push to Gig/Gogs will fail in case the version number didn't change. ${BUILD_NUMBER} is one of the Jenkins built-in
   //   variables.
   stage('Publish to Nexus') {
-    // TBD
+    echo "Current Version:" + version
+    def newCmd = mvnCmd + " deploy:deploy-file -Durl=" + mvnRelUrl 
+    newCmd = newCmd + " -Dfile=target/openshift-tasks.war -DartifactId=" + artifactId + " -DgroupId="
+    newCmd = newCmd + groupId + " -Dversion=" + version + " -DrepositoryId=nexus"
+    echo "cmd :" + newCmd
+    //sh newCmd
+    
+    echo "Done Deploy"
+    
+    String warFileName = "${groupId}.${artifactId}"
+    warFileName = warFileName.replace('.', '/')
+    
+    sh "echo ${warFileName}/${newVersion}/${artifactId}-${newVersion}.war"
+    sh "echo WAR_FILE_LOCATION=" + mvnRelUrl + "/${warFileName}/${newVersion}/${artifactId}-${newVersion}.war > mlbparks/sti-build/.s2i/environment"
+    sh "echo BUILD_NUMBER=${BUILD_NUMBER} >> .mlbparks/sti-build/s2i/environment"
+
+    // Update the Git/Gogs repository with the latest file
+    // Replace XYZ with your Initials
+    def commit = "Release " + newVersion
+    sh "git add mlbparks/s2i-build/.s2i/environment && git commit -m \"${commit}\" && git push origin master"
+    echo "Push to Nexus Done"  
+
   }
 
   // Build the OpenShift Image in OpenShift. 
@@ -69,14 +90,26 @@ node('maven') {
   //    for the .s2i/bin/assemble script to retrieve the war file from the location in the .s2i/environment file.
   // Also tag the image with "TestingCandidate-${version}" - e.g. TestingCandidate-1.5
   stage('Build OpenShift Image') {
-    // TBD
-  }
+      def newTag = "TestReady-${version}"
+      echo "New Tag: ${newTag}"
+      // Replace xyz-tasks-dev with the name of your dev project
+      openshiftBuild bldCfg: 'mlbparks', checkForTriggeredDeployments: 'false', namespace: 'adv-dev-hw', showBuildLogs: 'false', verbose: 'false', waitTime: '', waitUnit: 'sec'
+      openshiftVerifyBuild bldCfg: 'mlbparks', checkForTriggeredDeployments: 'false', namespace: 'adv-dev-hw', verbose: 'false', waitTime: ''
+      openshiftTag alias: 'false', destStream: 'mlbparks', destTag: newTag, destinationNamespace: 'adv-dev-hw', namespace: 'adv-dev-hw', srcStream: 'mlbparks', srcTag: 'latest', verbose: 'false'  
+   }
 
-  // Deploy the built image to the Development Environment. Pay close attention to WHICH image you are deploying.
-  // Make sure it is the one you just tagged in the previous step. You may need to patch the deployment configuration
-  // of your application.
   stage('Deploy to Dev') {
-    // TBD
+    // Patch the DeploymentConfig so that it points to the latest TestingCandidate-${version} Image.
+    // Replace xyz-tasks-dev with the name of your dev project
+    sh "oc project mal-tasks-dev"
+    sh "oc patch dc tasks --patch '{\"spec\": { \"triggers\": [ { \"type\": \"ImageChange\", \"imageChangeParams\": { \"containerNames\": [ \"tasks\" ], \"from\": { \"kind\": \"ImageStreamTag\", \"namespace\": \"mal-tasks-dev\", \"name\": \"tasks:Candidate-$version\"}}}]}}' -n mal-tasks-dev"
+
+      openshiftDeploy depCfg: 'tasks', namespace: 'mal-tasks-dev', verbose: 'false', waitTime: '', waitUnit: 'sec'
+      openshiftVerifyDeployment depCfg: 'tasks', namespace: 'mal-tasks-dev', replicaCount: '1', verbose: 'false', verifyReplicaCount: 'false', waitTime: '', waitUnit: 'sec'
+      openshiftVerifyService namespace: 'mal-tasks-dev', svcName: 'tasks', verbose: 'false'  }
+
+    // Run some integration tests (see the openshift-tasks Github Repository README.md for ideas).
+    // Once the tests succeed tag the image as ProdReady-${version}
   }
 
   // Run some integration tests (see the openshift-tasks Github Repository README.md for ideas).
