@@ -106,11 +106,8 @@ node('maven') {
 
       openshiftDeploy depCfg: 'tasks', namespace: 'mal-tasks-dev', verbose: 'false', waitTime: '', waitUnit: 'sec'
       openshiftVerifyDeployment depCfg: 'tasks', namespace: 'mal-tasks-dev', replicaCount: '1', verbose: 'false', verifyReplicaCount: 'false', waitTime: '', waitUnit: 'sec'
-      openshiftVerifyService namespace: 'mal-tasks-dev', svcName: 'tasks', verbose: 'false'  }
-
-    // Run some integration tests (see the openshift-tasks Github Repository README.md for ideas).
-    // Once the tests succeed tag the image as ProdReady-${version}
-  }
+      openshiftVerifyService namespace: 'mal-tasks-dev', svcName: 'tasks', verbose: 'false'  
+   }
 
   // Run some integration tests (see the openshift-tasks Github Repository README.md for ideas).
   // Once the tests succeed tag the image as ProdReady-${version}
