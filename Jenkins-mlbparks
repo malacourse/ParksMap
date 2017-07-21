@@ -7,10 +7,12 @@ node('maven') {
   // Nexus installation. The file nexus_openshift_settings.xml needs to be in the
   // Source Code repository.
   //def mvnCmd = "mvn -s ./nexus_openshift_settings.xml"
-  def mvnCmd = "cd ./mlbparks;pwd;mvn -s ../nexus_settings.xml"
+  def myApp = mlbparks"
+  def mvnCmd = "cd ./" + myApp + ";pwd;mvn -s ../nexus_settings.xml"
   def sonarArgs = " sonar:sonar -Dsonar.host.url=http://sonarqube-mal-gogs.apps.na1.openshift.opentlc.com"
   def mvnRelUrl = "http://nexus3-jenkins.192.168.99.100.nip.io/repository/releases/"
   
+  def myNamespace = "adv-dev-hw"
 
   stage('Checkout Source') {
     // Get Source Code from SCM (Git) as configured in the Jenkins Project
@@ -22,21 +24,18 @@ node('maven') {
   // The following variables need to be defined at the top level and not inside
   // the scope of a stage - otherwise they would not be accessible from other stages.
   // Extract version and other properties from the pom.xml
-  def groupId    = getGroupIdFromPom("mlbparks/pom.xml")
-  def artifactId = getArtifactIdFromPom("mlbparks/pom.xml")
-  def version    = getVersionFromPom("mlbparks/pom.xml")
+  def groupId    = getGroupIdFromPom(myApp + "/pom.xml")
+  def artifactId = getArtifactIdFromPom(myApp + "/pom.xml")
+  def version    = getVersionFromPom(myApp + "/pom.xml")
 
   // Using Maven build the war file
   // Do not run tests in this step
   stage('Build war') {
-    sh "cd mlbparks"
-    sh "pwd"
     sh mvnCmd + " -Dmaven.test.skip=true clean package"
   }
 
   // Using Maven run the unit tests
   stage('Unit Tests') {
-    sh "cd mlbparks"
     //sh mvnCmd + " test"
   }
 
@@ -47,22 +46,10 @@ node('maven') {
 
   // Publish the latest war file to Nexus. This needs to go into <nexusurl>/repository/releases.
   // Using the properties from the pom.xml file construct a filename that includes the version number from the pom.xml file
-  //
-  // You now have two options: Either binary build (streaming the war file into a binary build) or build with external artifacts.
-  // If you are unclear which path to follow ask your instructor.
-  // 
-  // When doing a binary build you are done.
-  // 
-  // When doing a build with external artifacts (not binary build) you will also need to do the following:
-  // - Update the Gogs project openshift-mlbparks-ocp by editing the .s2i/environment file. This file needs to have a line
-  //   WAR_FILE_LOCATION=<actual URL of the war file in nexus>
-  // - It is also a good idea to add another line like "BUILD_NUMBER=${BUILD_NUMBER}" to the environment file. Otherwise the
-  //   push to Gig/Gogs will fail in case the version number didn't change. ${BUILD_NUMBER} is one of the Jenkins built-in
-  //   variables.
   stage('Publish to Nexus') {
     echo "Current Version:" + version
     def newCmd = mvnCmd + " deploy:deploy-file -Durl=" + mvnRelUrl 
-    newCmd = newCmd + " -Dfile=target/mlbparks.war -DartifactId=" + artifactId + " -DgroupId="
+    newCmd = newCmd + " -Dfile=target/" + myApp + ".war -DartifactId=" + artifactId + " -DgroupId="
     newCmd = newCmd + groupId + " -Dversion=" + version + " -DrepositoryId=nexus"
     echo "cmd :" + newCmd
     sh newCmd
@@ -73,13 +60,13 @@ node('maven') {
     warFileName = warFileName.replace('.', '/')
     
     sh "echo ${warFileName}/${version}/${artifactId}-${version}.war"
-    sh "echo WAR_FILE_LOCATION=" + mvnRelUrl + "${warFileName}/${version}/${artifactId}-${version}.war > mlbparks/s2i-build/.s2i/environment"
-    sh "echo BUILD_NUMBER=${BUILD_NUMBER} >> mlbparks/s2i-build/.s2i/environment"
+    sh "echo WAR_FILE_LOCATION=" + mvnRelUrl + "${warFileName}/${version}/${artifactId}-${version}.war > " + myApp + "/s2i-build/.s2i/environment"
+    sh "echo BUILD_NUMBER=${BUILD_NUMBER} >> "+  myApp +  "/s2i-build/.s2i/environment"
 
     // Update the Git/Gogs repository with the latest file
     // Replace XYZ with your Initials
     def commit = "Release " + version
-    sh "git config --global user.name 'malacourse';git config --global user.email 'mlacours@redhat.com';git add mlbparks/s2i-build/.s2i/environment; git commit -m \"${commit}\"; git push origin HEAD:master"
+    sh "git config --global user.name 'malacourse';git config --global user.email 'mlacours@redhat.com';git add " + myApp + "/s2i-build/.s2i/environment; git commit -m \"${commit}\"; git push origin HEAD:master"
     echo "Push to Nexus Done"  
 
   }
@@ -95,20 +82,20 @@ node('maven') {
       newTag = "TestReady-${version}"
       echo "New Tag: ${newTag}"
       // Replace xyz-mlbparks-dev with the name of your dev project
-      openshiftBuild bldCfg: 'mlbparks', checkForTriggeredDeployments: 'false', namespace: 'adv-dev-hw', showBuildLogs: 'false', verbose: 'false', waitTime: '', waitUnit: 'sec'
-      openshiftVerifyBuild bldCfg: 'mlbparks', checkForTriggeredDeployments: 'false', namespace: 'adv-dev-hw', verbose: 'false', waitTime: ''
-      openshiftTag alias: 'false', destStream: 'mlbparks', destTag: newTag, destinationNamespace: 'adv-dev-hw', namespace: 'adv-dev-hw', srcStream: 'mlbparks', srcTag: 'latest', verbose: 'false'  
+      openshiftBuild bldCfg: '$myApp', checkForTriggeredDeployments: 'false', namespace: '$myNamespace', showBuildLogs: 'false', verbose: 'false', waitTime: '', waitUnit: 'sec'
+      openshiftVerifyBuild bldCfg: '$myApp', checkForTriggeredDeployments: 'false', namespace: '$myNampespace', verbose: 'false', waitTime: ''
+      openshiftTag alias: 'false', destStream: '$myApp', destTag: newTag, destinationNamespace: '$myNamespace', namespace: '$myNamespace', srcStream: '$myApp', srcTag: 'latest', verbose: 'false'  
    }
 
   stage('Deploy to Dev') {
     // Patch the DeploymentConfig so that it points to the latest TestingCandidate-${version} Image.
     // Replace xyz-mlbparks-dev with the name of your dev project
-    sh "oc project adv-dev-hw"
-    sh "oc patch dc mlbparks --patch '{\"spec\": { \"triggers\": [ { \"type\": \"ImageChange\", \"imageChangeParams\": { \"containerNames\": [ \"mlbparks\" ], \"from\": { \"kind\": \"ImageStreamTag\", \"namespace\": \"adv-dev-hw\", \"name\": \"mlbparks:$newTag\"}}}]}}' -n adv-dev-hw"
+    sh "oc project " + myNamespace
+    sh "oc patch dc $myApp --patch '{\"spec\": { \"triggers\": [ { \"type\": \"ImageChange\", \"imageChangeParams\": { \"containerNames\": [ \"$myApp\" ], \"from\": { \"kind\": \"ImageStreamTag\", \"namespace\": \"$myNamespace\", \"name\": \"$myApp:$newTag\"}}}]}}' -n $myNamespace"
 
-      openshiftDeploy depCfg: 'mlbparks', namespace: 'adv-dev-hw', verbose: 'false', waitTime: '', waitUnit: 'sec'
-      openshiftVerifyDeployment depCfg: 'mlbparks', namespace: 'adv-dev-hw', replicaCount: '1', verbose: 'false', verifyReplicaCount: 'false', waitTime: '', waitUnit: 'sec'
-      openshiftVerifyService namespace: 'adv-dev-hw', svcName: 'mlbparks', verbose: 'false'  
+      openshiftDeploy depCfg: '$myApp', namespace: '$myNamespace', verbose: 'false', waitTime: '', waitUnit: 'sec'
+      openshiftVerifyDeployment depCfg: '$myApp', namespace: '$myNamespace', replicaCount: '1', verbose: 'false', verifyReplicaCount: 'false', waitTime: '', waitUnit: 'sec'
+      openshiftVerifyService namespace: '$myNamespace', svcName: '$myApp', verbose: 'false'  
    }
 
   // Run some integration tests (see the openshift-mlbparks Github Repository README.md for ideas).
