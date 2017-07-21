@@ -79,10 +79,12 @@ node('maven') {
     // Update the Git/Gogs repository with the latest file
     // Replace XYZ with your Initials
     def commit = "Release " + version
-    sh "git config --global user.name 'malacourse';git config --global user.email 'mlacours@redhat.com';git add mlbparks/s2i-build/.s2i/environment; git branch; git commit -m \"${commit}\"; git push origin HEAD:master"
+    sh "git config --global user.name 'malacourse';git config --global user.email 'mlacours@redhat.com';git add mlbparks/s2i-build/.s2i/environment; git commit -m \"${commit}\"; git push origin HEAD:master"
     echo "Push to Nexus Done"  
 
   }
+  def newTag = ""
+
 
   // Build the OpenShift Image in OpenShift. 
   // 1. When doing a binary build make sure to rename the file ./target/openshift-mlbparks.war to ROOT.war before you start the build.
@@ -90,7 +92,7 @@ node('maven') {
   //    for the .s2i/bin/assemble script to retrieve the war file from the location in the .s2i/environment file.
   // Also tag the image with "TestingCandidate-${version}" - e.g. TestingCandidate-1.5
   stage('Build OpenShift Image') {
-      def newTag = "TestReady-${version}"
+      newTag = "TestReady-${version}"
       echo "New Tag: ${newTag}"
       // Replace xyz-mlbparks-dev with the name of your dev project
       openshiftBuild bldCfg: 'mlbparks', checkForTriggeredDeployments: 'false', namespace: 'adv-dev-hw', showBuildLogs: 'false', verbose: 'false', waitTime: '', waitUnit: 'sec'
@@ -102,7 +104,7 @@ node('maven') {
     // Patch the DeploymentConfig so that it points to the latest TestingCandidate-${version} Image.
     // Replace xyz-mlbparks-dev with the name of your dev project
     sh "oc project adv-dev-hw"
-    sh "oc patch dc mlbparks --patch '{\"spec\": { \"triggers\": [ { \"type\": \"ImageChange\", \"imageChangeParams\": { \"containerNames\": [ \"mlbparks\" ], \"from\": { \"kind\": \"ImageStreamTag\", \"namespace\": \"adv-dev-hw\", \"name\": \"mlbparks:Candidate-$version\"}}}]}}' -n adv-dev-hw"
+    sh "oc patch dc mlbparks --patch '{\"spec\": { \"triggers\": [ { \"type\": \"ImageChange\", \"imageChangeParams\": { \"containerNames\": [ \"mlbparks\" ], \"from\": { \"kind\": \"ImageStreamTag\", \"namespace\": \"adv-dev-hw\", \"name\": \"mlbparks:$newTag\"}}}]}}' -n adv-dev-hw"
 
       openshiftDeploy depCfg: 'mlbparks', namespace: 'adv-dev-hw', verbose: 'false', waitTime: '', waitUnit: 'sec'
       openshiftVerifyDeployment depCfg: 'mlbparks', namespace: 'adv-dev-hw', replicaCount: '1', verbose: 'false', verifyReplicaCount: 'false', waitTime: '', waitUnit: 'sec'
