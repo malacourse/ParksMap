@@ -82,8 +82,8 @@ node('maven') {
       newTag = "TestReady-${version}"
       echo "New Tag: ${newTag}"
       // Replace xyz-mlbparks-dev with the name of your dev project
-      openshiftBuild bldCfg: \"${myApp}\", checkForTriggeredDeployments: 'false', namespace: \"${myNamespace}\", showBuildLogs: 'false', verbose: 'false', waitTime: '', waitUnit: 'sec'
-      openshiftVerifyBuild bldCfg: '${myApp}', checkForTriggeredDeployments: 'false', namespace: '$myNampespace', verbose: 'false', waitTime: ''
+      openshiftBuild bldCfg: "${myApp}", checkForTriggeredDeployments: 'false', namespace: "${myNamespace}", showBuildLogs: 'false', verbose: 'false', waitTime: '', waitUnit: 'sec'
+      openshiftVerifyBuild bldCfg: "${myApp}", checkForTriggeredDeployments: 'false', namespace: "$myNamespace", verbose: 'false', waitTime: ''
       openshiftTag alias: 'false', destStream: '${myApp}', destTag: newTag, destinationNamespace: '${myNamespace}', namespace: '${myNamespace}', srcStream: '${myApp}', srcTag: 'latest', verbose: 'false'  
    }
 
