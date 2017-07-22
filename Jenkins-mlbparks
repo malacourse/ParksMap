@@ -6,7 +6,6 @@ node('maven') {
   // Define Maven Command. Make sure it points to the correct settings for our
   // Nexus installation. The file nexus_openshift_settings.xml needs to be in the
   // Source Code repository.
-  //def mvnCmd = "mvn -s ./nexus_openshift_settings.xml"
   def myApp = "mlbparks"
   def mvnCmd = "cd ./" + myApp + ";pwd;mvn -s ../nexus_settings.xml"
   def sonarArgs = " sonar:sonar -Dsonar.host.url=http://sonarqube-mal-gogs.apps.na1.openshift.opentlc.com"
