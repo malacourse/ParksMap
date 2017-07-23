@@ -94,7 +94,12 @@ node('maven') {
 
       openshiftDeploy depCfg: "${myApp}", namespace: "${myNamespace}", verbose: 'false', waitTime: '', waitUnit: 'sec'
       openshiftVerifyDeployment depCfg: "${myApp}", namespace: "${myNamespace}", replicaCount: '1', verbose: 'false', verifyReplicaCount: 'false', waitTime: '', waitUnit: 'sec'
-      openshiftVerifyService namespace: "${myNamespace}", svcName: "${myApp}", verbose: 'false'  
+      //openshiftVerifyService namespace: "${myNamespace}", svcName: "${myApp}", verbose: 'false'
+      if (verifyService("http://mlbparks-adv-dev-hw.mikes-apps.mikelacourse-services.com/ws/info") == fale)
+      {
+        currentBuild.result = 'FAILURE'
+        throw new hudson.AbortException('Uable to verify service')
+      }  
    }
 
   stage('Deploy to Test') {
@@ -105,7 +110,13 @@ node('maven') {
 
       openshiftDeploy depCfg: "${myApp}", namespace: "${myNamespace}-test", verbose: 'false', waitTime: '', waitUnit: 'sec'
       openshiftVerifyDeployment depCfg: "${myApp}", namespace: "${myNamespace}-test", replicaCount: '1', verbose: 'false', verifyReplicaCount: 'false', waitTime: '', waitUnit: 'sec'
-      openshiftVerifyService namespace: "${myNamespace}-test", svcName: "${myApp}", verbose: 'false'
+      //openshiftVerifyService namespace: "${myNamespace}-test", svcName: "${myApp}", verbose: 'false'
+      if (verifyService("http://mlbparks-adv-dev-hw-test.mikes-apps.mikelacourse-services.com/ws/info") == fale)
+      {
+        currentBuild.result = 'FAILURE'
+        throw new hudson.AbortException('Uable to verify service')
+      }
+
    }
 
 
@@ -117,6 +128,13 @@ node('maven') {
        def retries = 20;
        // Wait for app to be ready
        def status = 0
+
+      if (verifyService("http://mlbparks-adv-dev-hw-test.mikes-apps.mikelacourse-services.com/ws/info") == fale)
+      {
+        currentBuild.result = 'FAILURE'
+        throw new hudson.AbortException('Uable to verify service')
+      }
+
        while (retries >= 0 && status != 200)
        {
           try {
@@ -170,6 +188,34 @@ node('maven') {
     input "Switch Production?"
     // TBD
   }
+}
+
+//Service
+def verifyService(url)
+      def status = 0
+      def retries = 20
+       while (retries >= 0 && status != 200)
+       {
+          try {
+              def response = httpRequest url
+              println("Status: "+response.status)
+              if (200 == response.status)
+              {
+                 status = 200;
+             }
+          } catch (Exception ex)
+          {
+             println("Warn:" + ex.getMessage());
+          }
+          Thread.sleep(5000);
+          retries--;
+      }
+      if (status != 200)
+      {
+        println("Unable to verify service");
+        return false
+      }
+     return true
 }
 
 // Convenience Functions to read variables from the pom.xml
