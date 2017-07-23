@@ -122,7 +122,7 @@ node('maven') {
           try {
               def response = httpRequest 'http://mlbparks-adv-dev-hw-test.apps.na1.openshift.opentlc.com/mlbparks/ws/info'
               println("Status: "+response.status)
-              if ("200" == response.status)
+              if (200 == response.status)
               {
                  status = 200;
              }
@@ -135,8 +135,9 @@ node('maven') {
       }
       if (status != 200)
       {
+        println("Unable to get integration service");
         currentBuild.result = 'FAILURE'
-        return
+        throw new hudson.AbortException('Integration test failed!')
       }
       def response = httpRequest 'http://mlbparks-adv-dev-hw-test.apps.na1.openshift.opentlc.com/mlbparks/ws/data/all'
       println("Status: "+response.status)
@@ -144,7 +145,7 @@ node('maven') {
       if ("Items inserted in database: 30" != response.content)
       {
         currentBuild.result = 'FAILURE'
-        return
+        throw new hudson.AbortException('Integration test failed!')
       }
       println("Integration test passed!");
 
