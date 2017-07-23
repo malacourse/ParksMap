@@ -140,11 +140,11 @@ public class MongoDBConnection extends DBConnection{
      * @param database
      * @return
      */
-    public List<DataPoint> getAll(MongoDatabase database) {
+    public List<DataPoint> getAll() {
         System.out.println("[DEBUG] MongoDBConnection.getAll()");
 
         int i = 0;
-        FindIterable<Document> iterable = this.getCollection(database).find();
+        FindIterable<Document> iterable = this.getCollection(db).find();
         List<DataPoint> dataPoints = new ArrayList<DataPoint>();
         for (Document current : iterable) {
             DataPoint dataPoint = getPark(current);
