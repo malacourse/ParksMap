@@ -113,7 +113,7 @@ node('maven') {
   // Run some integration tests (see the openshift-mlbparks Github Repository README.md for ideas).
   // Once the tests succeed tag the image as ProdReady-${version}
   stage('Integration Test') {
-       
+       println("Start of Integration Test");
        def retries = 20;
        // Wait for app to be ready
        def status = 0
@@ -146,6 +146,7 @@ node('maven') {
         currentBuild.result = 'FAILURE'
         return
       }
+      println("Integration test passed!");
 
   }
 

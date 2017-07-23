@@ -23,7 +23,7 @@ import java.util.List;
 public class MLBParks {
 
     //MongoDBConnection con = new MongoDBConnection();
-    //DBConnection con = ConnectionFactory.connect();
+    DBConnection con = ConnectionFactory.connect();
 
     //@Inject
     //private DBConnection dbConnection;
@@ -33,7 +33,7 @@ public class MLBParks {
     public String load() {
         System.out.println("[INFO] load()");
         //MongoDBConnection con = new MongoDBConnection();
-        DBConnection con = ConnectionFactory.connect();
+        //DBConnection con = ConnectionFactory.connect();
         List<Document> parks = con.loadParks();
         try {
             //MongoDatabase db = con.connect();
@@ -54,7 +54,7 @@ public class MLBParks {
 
         try {
             //MongoDBConnection con = new MongoDBConnection();
-            DBConnection con = ConnectionFactory.connect();
+            //DBConnection con = ConnectionFactory.connect();
             return con.getAll();
         }catch(Exception e){
             System.out.println("[ERROR] Connecting to database");
