@@ -117,7 +117,7 @@ node('maven') {
        def retries = 20;
        // Wait for app to be ready
        def status = 0
-       while (retries < 0 && status != 200)
+       while (retries >= 0 && status != 200)
        {
           try {
               def response = httpRequest 'http://mlbparks-adv-dev-hw-test.apps.na1.openshift.opentlc.com/mlbparks/ws/info'
