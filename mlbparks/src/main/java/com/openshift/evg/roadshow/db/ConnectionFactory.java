@@ -7,10 +7,12 @@ public class ConnectionFactory {
 		try {
 		    String dbType = System.getenv("DB_TYPE");
 	        if (dbType == null || dbType.equals("")) {
+	        	System.out.println("Returning Test DB Connection");
 	        	return new TestConnection();
 	        }
 	        else
 	        {
+	        	System.out.println("Returning MongoDB Connection");
 	        	return new MongoDBConnection();
 	        }
 			
