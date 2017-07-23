@@ -113,20 +113,40 @@ node('maven') {
   // Run some integration tests (see the openshift-mlbparks Github Repository README.md for ideas).
   // Once the tests succeed tag the image as ProdReady-${version}
   stage('Integration Test') {
-    // TBD
-        try {
-            def response = httpRequest 'http://mlbparks-adv-dev-hw-test.apps.na1.openshift.opentlc.com/mlbparks/ws/data/load'
-            println("Status: "+response.status)
-            println("Content: "+response.content)
-            if ("Items inserted in database: 30" != response.content)
-            {
-               currentBuild.result = 'FAILURE'
-               return
-           }
-       } catch (Exception ex)
+       
+       def retries = 20;
+       // Wait for app to be ready
+       def status = 0
+       while (retries < 0 && status != 200)
        {
-           println("Warn:" + ex.getMessage());
-       }
+          try {
+              def response = httpRequest 'http://mlbparks-adv-dev-hw-test.apps.na1.openshift.opentlc.com/mlbparks/ws/info'
+              println("Status: "+response.status)
+              if ("200" == response.status)
+              {
+                 status = 200;
+             }
+          } catch (Exception ex)
+          {
+             println("Warn:" + ex.getMessage());
+          }
+          Thread.sleep(2000);
+          retries--;
+      }
+      if (status != 200)
+      {
+        currentBuild.result = 'FAILURE'
+        return
+      }
+      def response = httpRequest 'http://mlbparks-adv-dev-hw-test.apps.na1.openshift.opentlc.com/mlbparks/ws/data/all'
+      println("Status: "+response.status)
+      println("Content: "+response.content)
+      if ("Items inserted in database: 30" != response.content)
+      {
+        currentBuild.result = 'FAILURE'
+        return
+      }
+
   }
 
   // Blue/Green Deployment into Production
