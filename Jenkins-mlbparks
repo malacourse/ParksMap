@@ -10,7 +10,7 @@ node('maven') {
   def mvnCmd = "cd ./" + myApp + ";pwd;mvn -s ../nexus_settings.xml"
   def sonarArgs = " sonar:sonar -Dsonar.host.url=http://sonarqube-mal-gogs.apps.na1.openshift.opentlc.com"
   //def mvnRelUrl = "http://nexus3-jenkins.192.168.99.100.nip.io/repository/releases/"
-  def mvnRelUrl = "http://nexus3-jenkins.apps.na1.openshift.opentlc.com/repository/releases/"
+  def mvnRelUrl = "http://nexus3-jenkins.mikes-apps.mikelacourse-services.com/repository/releases/"
   def myNamespace = "adv-dev-hw"
 
   stage('Checkout Source') {
