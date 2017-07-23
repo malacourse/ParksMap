@@ -191,7 +191,7 @@ node('maven') {
 }
 
 //Service
-def verifyService(url)
+def verifyService(url) {
       def status = 0
       def retries = 20
        while (retries >= 0 && status != 200)
