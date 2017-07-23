@@ -114,6 +114,9 @@ node('maven') {
   // Once the tests succeed tag the image as ProdReady-${version}
   stage('Integration Test') {
     // TBD
+        def response = httpRequest 'http://mlbparks-adv-dev-hw-test.apps.na1.openshift.opentlc.com/mlbparks/ws/info'
+        println("Status: "+response.status)
+        println("Content: "+response.content)
   }
 
   // Blue/Green Deployment into Production
