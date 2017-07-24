@@ -60,7 +60,7 @@ node('maven') {
     jarFileName = jarFileName.replace('.', '/')
     
     sh "echo ${jarFileName}/${version}/${artifactId}-${version}.jar"
-    sh "echo WAR_FILE_LOCATION=" + mvnRelUrl + "${jarFileName}/${version}/${artifactId}-${version}.jar > " + myApp + "/s2i-build/.s2i/environment"
+    sh "echo JAR_FILE_LOCATION=" + mvnRelUrl + "${jarFileName}/${version}/${artifactId}-${version}.jar > " + myApp + "/s2i-build/.s2i/environment"
     sh "echo BUILD_NUMBER=${BUILD_NUMBER} >> "+  myApp +  "/s2i-build/.s2i/environment"
 
     // Update the Git/Gogs repository with the latest file
