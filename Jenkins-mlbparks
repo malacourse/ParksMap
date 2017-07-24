@@ -150,7 +150,7 @@ node('maven') {
 
   def tag = "blue"
   def altTag = "green"
-  def svcHost = "mlbparks-blue.adv-dev-hw-prod.svc"
+  def svcHost = "mlbparks-blue-adv-dev-hw-prod.mikes-apps.mikelacourse-services.com"
   // Blue/Green Deployment into Production
   // -------------------------------------
   // Next two stages could be one.
@@ -163,7 +163,7 @@ node('maven') {
       if (activeService == "${myApp}-blue") {
          tag = "green"
          altTag = "blue"
-         svcHost = "mlbparks-green.adv-dev-hw-prod.svc"
+         svcHost = "mlbparks-green-adv-dev-hw-prod.mikes-apps.mikelacourse-services.com"
       }
       openshiftTag alias: 'false', destStream: "${myApp}", destTag: newProdTag, destinationNamespace: "${myNamespace}", namespace: "${myNamespace}", srcStream: "${myApp}", srcTag: 'latest', verbose: 'false'
     
@@ -184,6 +184,14 @@ node('maven') {
       {
         currentBuild.result = 'FAILURE'
         throw new hudson.AbortException('Uable to verify service')
+      }
+      def response = httpRequest 'http://${svcHost}/ws/data/load'
+      println("Status: "+response.status)
+      println("Content: "+response.content)
+      if ("Items inserted in database: 30" != response.content)
+      {
+        currentBuild.result = 'FAILURE'
+        throw new hudson.AbortException('Load Data failed!')
       }
 
   }
