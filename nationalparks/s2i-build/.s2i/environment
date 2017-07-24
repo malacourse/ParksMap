@@ -1,2 +1,2 @@
-WAR_FILE_LOCATION=http://nexus3-jenkins.192.168.99.100.nip.io/repository/releases/org/springframework/boot/spring-boot-starter-parent/1.4.0.RELEASE/spring-boot-starter-parent-1.4.0.RELEASE.jar
-BUILD_NUMBER=2
+WAR_FILE_LOCATION=http://nexus3-jenkins.192.168.99.100.nip.io/repository/releases/com/openshift/evg/roadshow/nationalparks/1.0.4/nationalparks-1.0.4.jar
+BUILD_NUMBER=3
