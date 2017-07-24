@@ -148,8 +148,9 @@ node('maven') {
 
   }
 
-  def tag = ""
-  def altTag = ""
+  def tag = "blue"
+  def altTag = "green"
+  def svcHost = "mlbparks-blue.adv-dev-hw-prod.svc"
   // Blue/Green Deployment into Production
   // -------------------------------------
   // Next two stages could be one.
@@ -162,7 +163,9 @@ node('maven') {
       if (activeService == "${myApp}-blue") {
          tag = "green"
          altTag = "blue"
+         svcHost = "mlbparks-green.adv-dev-hw-prod.svc"
       }
+    
 
   }
   // Deploy the ProdReady-${version} image. Make sure this is the actual tagged image deployed!
@@ -171,12 +174,12 @@ node('maven') {
     // TBD
     def appName = myApp + "-" + tag
     sh "oc project " + myNamespace + "-prod"
-    sh "oc patch dc ${appName} --patch '{\"spec\": { \"triggers\": [ { \"type\": \"ImageChange\", \"imageChangeParams\": { \"containerNames\": [ \"${appName}\" ], \"from\": { \"kind\": \"ImageStreamTag\", \"namespace\": \"${myNamespace}\", \"name\": \"${myApp}:$newProdTag\"}}}]}}' -n ${myNamespace}-test"
+    sh "oc patch dc ${appName} --patch '{\"spec\": { \"triggers\": [ { \"type\": \"ImageChange\", \"imageChangeParams\": { \"containerNames\": [ \"${appName}\" ], \"from\": { \"kind\": \"ImageStreamTag\", \"namespace\": \"${myNamespace}\", \"name\": \"${myApp}:$newProdTag\"}}}]}}' -n ${myNamespace}-prod"
 
       openshiftDeploy depCfg: "${appName}", namespace: "${myNamespace}-prod", verbose: 'false', waitTime: '', waitUnit: 'sec'
       openshiftVerifyDeployment depCfg: "${appName}", namespace: "${myNamespace}-prod", replicaCount: '1', verbose: 'false', verifyReplicaCount: 'false', waitTime: '', waitUnit: 'sec'
       //openshiftVerifyService namespace: "${myNamespace}-test", svcName: "${myApp}", verbose: 'false'
-      if (verifyService("http://mlbparks-blue-green-adv-dev-hw-prod.mikes-apps.mikelacourse-services.com/ws/info") == false)
+      if (verifyService("http://${svcHost}/ws/info") == false)
       {
         currentBuild.result = 'FAILURE'
         throw new hudson.AbortException('Uable to verify service')
