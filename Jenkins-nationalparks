@@ -47,6 +47,7 @@ node('maven') {
   // Using the properties from the pom.xml file construct a filename that includes the version number from the pom.xml file
   stage('Publish to Nexus') {
     echo "Current Version:" + version
+    println("Artifact ID:" + artifactId + ", Group ID:" + groupId)
     def newCmd = mvnCmd + " deploy:deploy-file -Durl=" + mvnRelUrl 
     newCmd = newCmd + " -Dfile=target/" + myApp + ".jar -DartifactId=" + artifactId + " -DgroupId="
     newCmd = newCmd + groupId + " -Dversion=" + version + " -DrepositoryId=nexus"
