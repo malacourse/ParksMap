@@ -142,7 +142,7 @@ node('maven') {
       def response = httpRequest "http://nationalparks-adv-dev-hw-test.${myAppUrl}/ws/data/load"
       println("Status: "+response.status)
       println("Content: "+response.content)
-      if ("Items inserted in database: 30" != response.content)
+      if ("Items inserted in database: 2740" != response.content)
       {
         currentBuild.result = 'FAILURE'
         throw new hudson.AbortException('Integration test failed!')
@@ -191,7 +191,7 @@ node('maven') {
       def response = httpRequest "http://${svcHost}/ws/data/load"
       println("Status: "+response.status)
       println("Content: "+response.content)
-      if ("Items inserted in database: 30" != response.content)
+      if ("Items inserted in database: 2740" != response.content)
       {
         currentBuild.result = 'FAILURE'
         throw new hudson.AbortException('Load Data failed!')
