@@ -1,0 +1,248 @@
+#!groovy
+
+// Run this node on a Maven Slave
+// Maven Slaves have JDK and Maven already installed
+node('maven') {
+  // Define Maven Command. Make sure it points to the correct settings for our
+  // Nexus installation. The file nexus_openshift_settings.xml needs to be in the
+  // Source Code repository.
+  def myApp = "nationalparks"
+  def mvnCmd = "cd ./" + myApp + ";pwd;mvn -s ../nexus_settings.xml"
+  def sonarArgs = " sonar:sonar -Dsonar.host.url=http://sonarqube-mal-gogs.apps.na1.openshift.opentlc.com"
+  //def mvnRelUrl = "http://nexus3-jenkins.192.168.99.100.nip.io/repository/releases/"
+  def mvnRelUrl = "http://nexus3-jenkins.mikes-apps.mikelacourse-services.com/repository/releases/"
+  def myNamespace = "adv-dev-hw"
+
+  stage('Checkout Source') {
+    // Get Source Code from SCM (Git) as configured in the Jenkins Project
+    // Next line for inline script, "checkout scm" for Jenkinsfile from Gogs
+    //git 'http://gogs.xyz-gogs.svc.cluster.local:3000/CICDLabs/openshift-mlbparks.git'
+    checkout scm
+  }
+
+  // The following variables need to be defined at the top level and not inside
+  // the scope of a stage - otherwise they would not be accessible from other stages.
+  // Extract version and other properties from the pom.xml
+  def groupId    = getGroupIdFromPom(myApp + "/pom.xml")
+  def artifactId = getArtifactIdFromPom(myApp + "/pom.xml")
+  def version    = getVersionFromPom(myApp + "/pom.xml")
+
+  // Using Maven build the war file
+  // Do not run tests in this step
+  stage('Build jar') {
+    sh mvnCmd + " -Dmaven.test.skip=true clean package"
+  }
+
+  // Using Maven run the unit tests
+  stage('Unit Tests') {
+    //sh mvnCmd + " test"
+  }
+
+  // Using Maven call SonarQube for Code Analysis
+  stage('Code Analysis') {
+    //sh mvnCmd + sonarArgs
+  }
+
+  // Publish the latest war file to Nexus. This needs to go into <nexusurl>/repository/releases.
+  // Using the properties from the pom.xml file construct a filename that includes the version number from the pom.xml file
+  stage('Publish to Nexus') {
+    echo "Current Version:" + version
+    def newCmd = mvnCmd + " deploy:deploy-file -Durl=" + mvnRelUrl 
+    newCmd = newCmd + " -Dfile=target/" + myApp + ".jar -DartifactId=" + artifactId + " -DgroupId="
+    newCmd = newCmd + groupId + " -Dversion=" + version + " -DrepositoryId=nexus"
+    echo "cmd :" + newCmd
+    sh newCmd
+    
+    echo "Done Deploy"
+    
+    String jarFileName = "${groupId}.${artifactId}"
+    jarFileName = jarFileName.replace('.', '/')
+    
+    sh "echo ${jarFileName}/${version}/${artifactId}-${version}.jar"
+    sh "echo WAR_FILE_LOCATION=" + mvnRelUrl + "${jarFileName}/${version}/${artifactId}-${version}.jar > " + myApp + "/s2i-build/.s2i/environment"
+    sh "echo BUILD_NUMBER=${BUILD_NUMBER} >> "+  myApp +  "/s2i-build/.s2i/environment"
+
+    // Update the Git/Gogs repository with the latest file
+    // Replace XYZ with your Initials
+    def commit = "Release " + version
+    sh "git config --global user.name 'malacourse';git config --global user.email 'mlacours@redhat.com';git add " + myApp + "/s2i-build/.s2i/environment; git commit -m \"${commit}\"; git push origin HEAD:master"
+    echo "Push to Nexus Done"  
+
+  }
+  def newTag = ""
+  def newProdTag = ""
+
+
+  // Build the OpenShift Image in OpenShift. 
+  // 1. When doing a binary build make sure to rename the file ./target/openshift-mlbparks.war to ROOT.war before you start the build.
+  // 2. When doing a build with external artifacts make sure to use the build configuration pointing to openshift-mlbparks-ocp
+  //    for the .s2i/bin/assemble script to retrieve the war file from the location in the .s2i/environment file.
+  // Also tag the image with "TestingCandidate-${version}" - e.g. TestingCandidate-1.5
+  stage('Build OpenShift Image') {
+      newTag = "TestReady-${version}"
+      newProdTag = "ProdReady-${version}"
+      echo "New Tag: ${newTag}"
+      // Replace xyz-mlbparks-dev with the name of your dev project
+      openshiftBuild bldCfg: "${myApp}", checkForTriggeredDeployments: 'false', namespace: "${myNamespace}", showBuildLogs: 'false', verbose: 'false', waitTime: '', waitUnit: 'sec'
+      openshiftVerifyBuild bldCfg: "${myApp}", checkForTriggeredDeployments: 'false', namespace: "$myNamespace", verbose: 'false', waitTime: ''
+      openshiftTag alias: 'false', destStream: "${myApp}", destTag: newTag, destinationNamespace: "${myNamespace}", namespace: "${myNamespace}", srcStream: "${myApp}", srcTag: 'latest', verbose: 'false'  
+   }
+
+  stage('Deploy to Dev') {
+    // Patch the DeploymentConfig so that it points to the latest TestingCandidate-${version} Image.
+    // Replace xyz-mlbparks-dev with the name of your dev project
+    sh "oc project " + myNamespace
+    sh "oc patch dc ${myApp} --patch '{\"spec\": { \"triggers\": [ { \"type\": \"ImageChange\", \"imageChangeParams\": { \"containerNames\": [ \"${myApp}\" ], \"from\": { \"kind\": \"ImageStreamTag\", \"namespace\": \"${myNamespace}\", \"name\": \"${myApp}:$newTag\"}}}]}}' -n ${myNamespace}"
+
+      openshiftDeploy depCfg: "${myApp}", namespace: "${myNamespace}", verbose: 'false', waitTime: '', waitUnit: 'sec'
+      openshiftVerifyDeployment depCfg: "${myApp}", namespace: "${myNamespace}", replicaCount: '1', verbose: 'false', verifyReplicaCount: 'false', waitTime: '', waitUnit: 'sec'
+      //openshiftVerifyService namespace: "${myNamespace}", svcName: "${myApp}", verbose: 'false'
+      if (verifyService("http://nationalparks-adv-dev-hw.mikes-apps.mikelacourse-services.com/ws/info") == false)
+      {
+        currentBuild.result = 'FAILURE'
+        throw new hudson.AbortException('Uable to verify service')
+      }  
+   }
+
+  stage('Deploy to Test') {
+    // Patch the DeploymentConfig so that it points to the latest TestingCandidate-${version} Image.
+    // Replace xyz-mlbparks-dev with the name of your dev project
+    sh "oc project " + myNamespace + "-test"
+    sh "oc patch dc ${myApp} --patch '{\"spec\": { \"triggers\": [ { \"type\": \"ImageChange\", \"imageChangeParams\": { \"containerNames\": [ \"${myApp}\" ], \"from\": { \"kind\": \"ImageStreamTag\", \"namespace\": \"${myNamespace}\", \"name\": \"${myApp}:$newTag\"}}}]}}' -n ${myNamespace}-test"
+
+      openshiftDeploy depCfg: "${myApp}", namespace: "${myNamespace}-test", verbose: 'false', waitTime: '', waitUnit: 'sec'
+      openshiftVerifyDeployment depCfg: "${myApp}", namespace: "${myNamespace}-test", replicaCount: '1', verbose: 'false', verifyReplicaCount: 'false', waitTime: '', waitUnit: 'sec'
+      //openshiftVerifyService namespace: "${myNamespace}-test", svcName: "${myApp}", verbose: 'false'
+      if (verifyService("http://nationalparks-adv-dev-hw-test.mikes-apps.mikelacourse-services.com/ws/info") == false)
+      {
+        currentBuild.result = 'FAILURE'
+        throw new hudson.AbortException('Uable to verify service')
+      }
+
+   }
+
+
+
+  // Run some integration tests (see the openshift-mlbparks Github Repository README.md for ideas).
+  // Once the tests succeed tag the image as ProdReady-${version}
+  stage('Integration Test') {
+       println("Start of Integration Test");
+       def retries = 20;
+       // Wait for app to be ready
+       def status = 0
+
+      if (verifyService("http://nationalparks-adv-dev-hw-test.mikes-apps.mikelacourse-services.com/ws/info") == false)
+      {
+        currentBuild.result = 'FAILURE'
+        throw new hudson.AbortException('Uable to verify service')
+      }
+      def response = httpRequest 'http://nationalparks-adv-dev-hw-test.mikes-apps.mikelacourse-services.com/ws/data/load'
+      println("Status: "+response.status)
+      println("Content: "+response.content)
+      if ("Items inserted in database: 30" != response.content)
+      {
+        currentBuild.result = 'FAILURE'
+        throw new hudson.AbortException('Integration test failed!')
+      }
+      println("Integration test passed!");
+
+  }
+
+  def tag = "blue"
+  def altTag = "green"
+  def svcHost = "nationalparks-blue-adv-dev-hw-prod.mikes-apps.mikelacourse-services.com"
+  // Blue/Green Deployment into Production
+  // -------------------------------------
+  // Next two stages could be one.
+  // Make sure to deploy the right version. If green is active then deploy blue, and vice versa.
+  // You will need to figure out which application is active and set the target to the other.
+  stage('Prep Production Deployment') {
+      sh "oc get route ${myApp}-blue-green -n ${myNamespace}-prod -o jsonpath='{ .spec.to.name }' --loglevel=4 > activeservice"
+      activeService = readFile('activeservice').trim()
+      println("Current active service:" + activeService)
+      if (activeService == "${myApp}-blue") {
+         tag = "green"
+         altTag = "blue"
+         svcHost = "nationalparks-green-adv-dev-hw-prod.mikes-apps.mikelacourse-services.com"
+      }
+      openshiftTag alias: 'false', destStream: "${myApp}", destTag: newProdTag, destinationNamespace: "${myNamespace}", namespace: "${myNamespace}", srcStream: "${myApp}", srcTag: 'latest', verbose: 'false'
+    
+
+  }
+  // Deploy the ProdReady-${version} image. Make sure this is the actual tagged image deployed!
+  // Do not activate the new version yet.
+  stage('Deploy new Version to Prod') {
+    // TBD
+    def appName = myApp + "-" + tag
+    sh "oc project " + myNamespace + "-prod"
+    sh "oc patch dc ${appName} --patch '{\"spec\": { \"triggers\": [ { \"type\": \"ImageChange\", \"imageChangeParams\": { \"containerNames\": [ \"${appName}\" ], \"from\": { \"kind\": \"ImageStreamTag\", \"namespace\": \"${myNamespace}\", \"name\": \"${myApp}:$newProdTag\"}}}]}}' -n ${myNamespace}-prod"
+
+      openshiftDeploy depCfg: "${appName}", namespace: "${myNamespace}-prod", verbose: 'false', waitTime: '', waitUnit: 'sec'
+      openshiftVerifyDeployment depCfg: "${appName}", namespace: "${myNamespace}-prod", replicaCount: '1', verbose: 'false', verifyReplicaCount: 'false', waitTime: '', waitUnit: 'sec'
+      //openshiftVerifyService namespace: "${myNamespace}-test", svcName: "${myApp}", verbose: 'false'
+      if (verifyService("http://${svcHost}/ws/info") == false)
+      {
+        currentBuild.result = 'FAILURE'
+        throw new hudson.AbortException('Uable to verify service')
+      }
+      def response = httpRequest "http://${svcHost}/ws/data/load"
+      println("Status: "+response.status)
+      println("Content: "+response.content)
+      if ("Items inserted in database: 30" != response.content)
+      {
+        currentBuild.result = 'FAILURE'
+        throw new hudson.AbortException('Load Data failed!')
+      }
+
+  }
+
+  // Once approved (input step) switch production over to the new version.
+  stage('Switch over to new Version') {
+    input "Switch Production?"
+    sh "oc patch route 'nationalparks-blue-green' --patch '{\"spec\": { \"to\": { \"name\": \"${myApp}-${tag}\"}}}' -n ${myNamespace}-prod"
+println("Route switched to: " + tag)
+  }
+}
+
+//Service
+def verifyService(url) {
+      def status = 0
+      def retries = 20
+       while (retries >= 0 && status != 200)
+       {
+          try {
+              def response = httpRequest url
+              println("Status: "+response.status)
+              if (200 == response.status)
+              {
+                 status = 200;
+             }
+          } catch (Exception ex)
+          {
+             println("Warn:" + ex.getMessage());
+          }
+          Thread.sleep(5000);
+          retries--;
+      }
+      if (status != 200)
+      {
+        println("Unable to verify service");
+        return false
+      }
+     return true
+}
+
+// Convenience Functions to read variables from the pom.xml
+// Do not change anything below this line.
+def getVersionFromPom(pom) {
+  def matcher = readFile(pom) =~ '<version>(.+)</version>'
+  matcher ? matcher[0][1] : null
+}
+def getGroupIdFromPom(pom) {
+  def matcher = readFile(pom) =~ '<groupId>(.+)</groupId>'
+  matcher ? matcher[0][1] : null
+}
+def getArtifactIdFromPom(pom) {
+  def matcher = readFile(pom) =~ '<artifactId>(.+)</artifactId>'
+  matcher ? matcher[0][1] : null
+}
