@@ -156,8 +156,9 @@ node('maven') {
   // Make sure to deploy the right version. If green is active then deploy blue, and vice versa.
   // You will need to figure out which application is active and set the target to the other.
   stage('Prep Production Deployment') {
-      sh "oc get route "${myApp}-blue-green" -n "${myNamespace}-prod" -o jsonpath='{ .spec.to.name }' --loglevel=4 > activeservice"
+      sh "oc get route ${myApp}-blue-green -n ${myNamespace}-prod -o jsonpath='{ .spec.to.name }' --loglevel=4 > activeservice"
       activeService = readFile('activeservice').trim()
+      println("Current active service:" + activeService)
       if (activeService == "${myApp}-blue") {
          tag = "green"
          altTag = "blue"
