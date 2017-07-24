@@ -199,8 +199,8 @@ node('maven') {
   // Once approved (input step) switch production over to the new version.
   stage('Switch over to new Version') {
     input "Switch Production?"
-    sh "oc patch route 'mlbparks-blue-green' --patch '{\"spec\": { \"to\": { \"name\": \"${myApp}-${altTag}\"}}}' -n ${myNamespace}-prod"
-println("Route switched to: " + altTag)
+    sh "oc patch route 'mlbparks-blue-green' --patch '{\"spec\": { \"to\": { \"name\": \"${myApp}-${tag}\"}}}' -n ${myNamespace}-prod"
+println("Route switched to: " + tag)
   }
 }
 
