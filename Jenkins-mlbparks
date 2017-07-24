@@ -70,6 +70,7 @@ node('maven') {
 
   }
   def newTag = ""
+  def newProdTag = ""
 
 
   // Build the OpenShift Image in OpenShift. 
@@ -79,6 +80,7 @@ node('maven') {
   // Also tag the image with "TestingCandidate-${version}" - e.g. TestingCandidate-1.5
   stage('Build OpenShift Image') {
       newTag = "TestReady-${version}"
+      newProdTag = "ProdReady-${version}"
       echo "New Tag: ${newTag}"
       // Replace xyz-mlbparks-dev with the name of your dev project
       openshiftBuild bldCfg: "${myApp}", checkForTriggeredDeployments: 'false', namespace: "${myNamespace}", showBuildLogs: 'false', verbose: 'false', waitTime: '', waitUnit: 'sec'
@@ -134,30 +136,7 @@ node('maven') {
         currentBuild.result = 'FAILURE'
         throw new hudson.AbortException('Uable to verify service')
       }
-
-       while (retries >= 0 && status != 200)
-       {
-          try {
-              def response = httpRequest 'http://mlbparks-adv-dev-hw-test.apps.na1.openshift.opentlc.com/mlbparks/ws/info'
-              println("Status: "+response.status)
-              if (200 == response.status)
-              {
-                 status = 200;
-             }
-          } catch (Exception ex)
-          {
-             println("Warn:" + ex.getMessage());
-          }
-          Thread.sleep(5000);
-          retries--;
-      }
-      if (status != 200)
-      {
-        println("Unable to get integration service");
-        currentBuild.result = 'FAILURE'
-        throw new hudson.AbortException('Integration test failed!')
-      }
-      def response = httpRequest 'http://mlbparks-adv-dev-hw-test.apps.na1.openshift.opentlc.com/mlbparks/ws/data/load'
+      def response = httpRequest 'http://mlbparks-adv-dev-hw-test.mikes-apps.mikelacourse-services.com/mlbparks/ws/data/load'
       println("Status: "+response.status)
       println("Content: "+response.content)
       if ("Items inserted in database: 30" != response.content)
@@ -169,18 +148,39 @@ node('maven') {
 
   }
 
+  def tag = ""
+  def altTag = ""
   // Blue/Green Deployment into Production
   // -------------------------------------
   // Next two stages could be one.
   // Make sure to deploy the right version. If green is active then deploy blue, and vice versa.
   // You will need to figure out which application is active and set the target to the other.
   stage('Prep Production Deployment') {
-    // TBD
+      sh "oc get route "${myApp}-blue-green" -n "${myNamespace}-prod" -o jsonpath='{ .spec.to.name }' --loglevel=4 > activeservice"
+      activeService = readFile('activeservice').trim()
+      if (activeService == "${myApp}-blue") {
+         tag = "green"
+         altTag = "blue"
+      }
+
   }
   // Deploy the ProdReady-${version} image. Make sure this is the actual tagged image deployed!
   // Do not activate the new version yet.
-  stage('Deploy new Version') {
+  stage('Deploy new Version to Prod') {
     // TBD
+    def appName = myApp + "-" + tag
+    sh "oc project " + myNamespace + "-prod"
+    sh "oc patch dc "${appName} --patch '{\"spec\": { \"triggers\": [ { \"type\": \"ImageChange\", \"imageChangeParams\": { \"containerNames\": [ \"${appName}\" ], \"from\": { \"kind\": \"ImageStreamTag\", \"namespace\": \"${myNamespace}\", \"name\": \"${myApp}:$newProdTag\"}}}]}}' -n ${myNamespace}-test"
+
+      openshiftDeploy depCfg: "${appName}", namespace: "${myNamespace}-prod", verbose: 'false', waitTime: '', waitUnit: 'sec'
+      openshiftVerifyDeployment depCfg: "${appName}", namespace: "${myNamespace}-prod", replicaCount: '1', verbose: 'false', verifyReplicaCount: 'false', waitTime: '', waitUnit: 'sec'
+      //openshiftVerifyService namespace: "${myNamespace}-test", svcName: "${myApp}", verbose: 'false'
+      if (verifyService("http://mlbparks-blue-green-adv-dev-hw-prod.mikes-apps.mikelacourse-services.com/ws/info") == false)
+      {
+        currentBuild.result = 'FAILURE'
+        throw new hudson.AbortException('Uable to verify service')
+      }
+
   }
 
   // Once approved (input step) switch production over to the new version.
