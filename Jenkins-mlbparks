@@ -165,6 +165,7 @@ node('maven') {
          altTag = "blue"
          svcHost = "mlbparks-green.adv-dev-hw-prod.svc"
       }
+      openshiftTag alias: 'false', destStream: "${myApp}", destTag: newProdTag, destinationNamespace: "${myNamespace}", namespace: "${myNamespace}", srcStream: "${myApp}", srcTag: 'latest', verbose: 'false'
     
 
   }
