@@ -136,7 +136,7 @@ node('maven') {
         currentBuild.result = 'FAILURE'
         throw new hudson.AbortException('Uable to verify service')
       }
-      def response = httpRequest 'http://mlbparks-adv-dev-hw-test.mikes-apps.mikelacourse-services.com/mlbparks/ws/data/load'
+      def response = httpRequest 'http://mlbparks-adv-dev-hw-test.mikes-apps.mikelacourse-services.com/ws/data/load'
       println("Status: "+response.status)
       println("Content: "+response.content)
       if ("Items inserted in database: 30" != response.content)
