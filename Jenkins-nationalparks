@@ -210,7 +210,7 @@ println("Route switched to: " + tag)
 //Service
 def verifyService(url) {
       def status = 0
-      def retries = 20
+      def retries = 10
        while (retries >= 0 && status != 200)
        {
           try {
@@ -224,7 +224,7 @@ def verifyService(url) {
           {
              println("Warn:" + ex.getMessage());
           }
-          Thread.sleep(5000);
+          Thread.sleep(7000);
           retries--;
       }
       if (status != 200)
