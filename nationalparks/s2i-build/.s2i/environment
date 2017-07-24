@@ -1,2 +1,2 @@
 JAR_FILE_LOCATION=http://nexus3-jenkins.192.168.99.100.nip.io/repository/releases/com/openshift/evg/roadshow/nationalparks/1.0.4/nationalparks-1.0.4.jar
-BUILD_NUMBER=10
+BUILD_NUMBER=11
