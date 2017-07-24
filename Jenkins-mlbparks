@@ -185,7 +185,7 @@ node('maven') {
         currentBuild.result = 'FAILURE'
         throw new hudson.AbortException('Uable to verify service')
       }
-      def response = httpRequest 'http://${svcHost}/ws/data/load'
+      def response = httpRequest "http://${svcHost}/ws/data/load"
       println("Status: "+response.status)
       println("Content: "+response.content)
       if ("Items inserted in database: 30" != response.content)
@@ -199,7 +199,8 @@ node('maven') {
   // Once approved (input step) switch production over to the new version.
   stage('Switch over to new Version') {
     input "Switch Production?"
-    // TBD
+    sh "oc patch route 'mlbparks-blue-green' --patch '{\"spec\": { \"to\": { \"name\": \"${myApp}-${altTag}\"}}}' -n ${myNamespace}-prod"
+println("Route switched to: " + altTag)
   }
 }
 
