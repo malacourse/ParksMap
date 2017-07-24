@@ -1,5 +1,6 @@
 package com.openshift.evg.roadshow.rest;
 
+import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
@@ -10,10 +11,11 @@ import org.springframework.web.bind.annotation.RestController;
  * Created by jmorales on 11/08/16.
  */
 @RestController
-@RequestMapping("/ws/healthz")
+@RequestMapping("/ws")
 public class Healthz {
 
-    @RequestMapping(method = RequestMethod.GET, value = "/")
+    @CrossOrigin
+    @RequestMapping(method = RequestMethod.GET, value = "/healthz", produces = "application/json")
     public String healthz() {
         return "OK";
     }
