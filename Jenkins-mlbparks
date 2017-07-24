@@ -95,7 +95,7 @@ node('maven') {
       openshiftDeploy depCfg: "${myApp}", namespace: "${myNamespace}", verbose: 'false', waitTime: '', waitUnit: 'sec'
       openshiftVerifyDeployment depCfg: "${myApp}", namespace: "${myNamespace}", replicaCount: '1', verbose: 'false', verifyReplicaCount: 'false', waitTime: '', waitUnit: 'sec'
       //openshiftVerifyService namespace: "${myNamespace}", svcName: "${myApp}", verbose: 'false'
-      if (verifyService("http://mlbparks-adv-dev-hw.mikes-apps.mikelacourse-services.com/ws/info") == fale)
+      if (verifyService("http://mlbparks-adv-dev-hw.mikes-apps.mikelacourse-services.com/ws/info") == false)
       {
         currentBuild.result = 'FAILURE'
         throw new hudson.AbortException('Uable to verify service')
@@ -111,7 +111,7 @@ node('maven') {
       openshiftDeploy depCfg: "${myApp}", namespace: "${myNamespace}-test", verbose: 'false', waitTime: '', waitUnit: 'sec'
       openshiftVerifyDeployment depCfg: "${myApp}", namespace: "${myNamespace}-test", replicaCount: '1', verbose: 'false', verifyReplicaCount: 'false', waitTime: '', waitUnit: 'sec'
       //openshiftVerifyService namespace: "${myNamespace}-test", svcName: "${myApp}", verbose: 'false'
-      if (verifyService("http://mlbparks-adv-dev-hw-test.mikes-apps.mikelacourse-services.com/ws/info") == fale)
+      if (verifyService("http://mlbparks-adv-dev-hw-test.mikes-apps.mikelacourse-services.com/ws/info") == false)
       {
         currentBuild.result = 'FAILURE'
         throw new hudson.AbortException('Uable to verify service')
@@ -129,7 +129,7 @@ node('maven') {
        // Wait for app to be ready
        def status = 0
 
-      if (verifyService("http://mlbparks-adv-dev-hw-test.mikes-apps.mikelacourse-services.com/ws/info") == fale)
+      if (verifyService("http://mlbparks-adv-dev-hw-test.mikes-apps.mikelacourse-services.com/ws/info") == false)
       {
         currentBuild.result = 'FAILURE'
         throw new hudson.AbortException('Uable to verify service')
