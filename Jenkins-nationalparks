@@ -12,6 +12,8 @@ node('maven') {
   def mvnRelUrl = "http://nexus3-jenkins.192.168.99.100.nip.io/repository/releases/"
   //def mvnRelUrl = "http://nexus3-jenkins.mikes-apps.mikelacourse-services.com/repository/releases/"
   def myNamespace = "adv-dev-hw"
+  def myAppURL = "mikes-apps.mikelacourse-services.com"
+  myAppUrl = "192.168.99.100.nip.io"
 
   stage('Checkout Source') {
     // Get Source Code from SCM (Git) as configured in the Jenkins Project
@@ -98,7 +100,7 @@ node('maven') {
       openshiftDeploy depCfg: "${myApp}", namespace: "${myNamespace}", verbose: 'false', waitTime: '', waitUnit: 'sec'
       openshiftVerifyDeployment depCfg: "${myApp}", namespace: "${myNamespace}", replicaCount: '1', verbose: 'false', verifyReplicaCount: 'false', waitTime: '', waitUnit: 'sec'
       //openshiftVerifyService namespace: "${myNamespace}", svcName: "${myApp}", verbose: 'false'
-      if (verifyService("http://nationalparks-adv-dev-hw.mikes-apps.mikelacourse-services.com/ws/info") == false)
+      if (verifyService("http://nationalparks-${myNamespace}.${myAppUrl}/ws/info") == false)
       {
         currentBuild.result = 'FAILURE'
         throw new hudson.AbortException('Uable to verify service')
@@ -114,7 +116,7 @@ node('maven') {
       openshiftDeploy depCfg: "${myApp}", namespace: "${myNamespace}-test", verbose: 'false', waitTime: '', waitUnit: 'sec'
       openshiftVerifyDeployment depCfg: "${myApp}", namespace: "${myNamespace}-test", replicaCount: '1', verbose: 'false', verifyReplicaCount: 'false', waitTime: '', waitUnit: 'sec'
       //openshiftVerifyService namespace: "${myNamespace}-test", svcName: "${myApp}", verbose: 'false'
-      if (verifyService("http://nationalparks-adv-dev-hw-test.mikes-apps.mikelacourse-services.com/ws/info") == false)
+      if (verifyService("http://nationalparks-${myNamespace}-test.${myAppUrl}/ws/info") == false)
       {
         currentBuild.result = 'FAILURE'
         throw new hudson.AbortException('Uable to verify service')
@@ -132,12 +134,12 @@ node('maven') {
        // Wait for app to be ready
        def status = 0
 
-      if (verifyService("http://nationalparks-adv-dev-hw-test.mikes-apps.mikelacourse-services.com/ws/info") == false)
+      if (verifyService("http://nationalparks-adv-dev-hw-test.${myAppUrl}/ws/info") == false)
       {
         currentBuild.result = 'FAILURE'
         throw new hudson.AbortException('Uable to verify service')
       }
-      def response = httpRequest 'http://nationalparks-adv-dev-hw-test.mikes-apps.mikelacourse-services.com/ws/data/load'
+      def response = httpRequest "http://nationalparks-adv-dev-hw-test.${myAppUrl}/ws/data/load"
       println("Status: "+response.status)
       println("Content: "+response.content)
       if ("Items inserted in database: 30" != response.content)
@@ -151,7 +153,7 @@ node('maven') {
 
   def tag = "blue"
   def altTag = "green"
-  def svcHost = "nationalparks-blue-adv-dev-hw-prod.mikes-apps.mikelacourse-services.com"
+  def svcHost = "nationalparks-blue-adv-dev-hw-prod.${myAppUrl}"
   // Blue/Green Deployment into Production
   // -------------------------------------
   // Next two stages could be one.
@@ -164,7 +166,7 @@ node('maven') {
       if (activeService == "${myApp}-blue") {
          tag = "green"
          altTag = "blue"
-         svcHost = "nationalparks-green-adv-dev-hw-prod.mikes-apps.mikelacourse-services.com"
+         svcHost = "nationalparks-green-adv-dev-hw-prod.${myAppUrl}"
       }
       openshiftTag alias: 'false', destStream: "${myApp}", destTag: newProdTag, destinationNamespace: "${myNamespace}", namespace: "${myNamespace}", srcStream: "${myApp}", srcTag: 'latest', verbose: 'false'
     
