@@ -130,19 +130,17 @@ node('maven') {
   // Once the tests succeed tag the image as ProdReady-${version}
   stage('Integration Test') {
        println("Start of Integration Test");
-       def retries = 20;
-       // Wait for app to be ready
-       def status = 0
 
       if (verifyService("http://parksmap-web-adv-dev-hw-test.${myAppUrl}/ws/healthz") == false)
       {
         currentBuild.result = 'FAILURE'
         throw new hudson.AbortException('Uable to verify service')
       }
-      def response = httpRequest "http://parksmap-web-adv-dev-hw-test.${myAppUrl}/ws/data/load"
+      def endpoint = "nationalparks"
+      def response = httpRequest "http://parksmap-web-adv-dev-hw-test.${myAppUrl}/ws/backends/register?endpoint=${endpoint}"
       println("Status: "+response.status)
       println("Content: "+response.content)
-      if ("Items inserted in database: 2740" != response.content)
+      if (response.content.indexOf(endpoint) < 0)
       {
         currentBuild.result = 'FAILURE'
         throw new hudson.AbortException('Integration test failed!')
@@ -188,13 +186,21 @@ node('maven') {
         currentBuild.result = 'FAILURE'
         throw new hudson.AbortException('Uable to verify service')
       }
-      def response = httpRequest "http://${svcHost}/ws/data/load"
-      println("Status: "+response.status)
+      def endpoint = "nationalparks-blue-green"
+      def response = httpRequest "http://${svcHost}/ws/backends/register?endpoint=${endpoint}"
       println("Content: "+response.content)
-      if ("Items inserted in database: 2740" != response.content)
+      if (response.content.indexOf(endpoint) < 0)
       {
         currentBuild.result = 'FAILURE'
-        throw new hudson.AbortException('Load Data failed!')
+        throw new hudson.AbortException('Failed to register service:' + endpoint)
+      }
+      def endpoint = "mlbparks-blue-green"
+      def response = httpRequest "http://${svcHost}/ws/backends/register?endpoint=${endpoint}"
+      println("Content: "+response.content)
+      if (response.content.indexOf(endpoint) < 0)
+      {
+        currentBuild.result = 'FAILURE'
+        throw new hudson.AbortException('Failed to register service:' + endpoint)
       }
 
   }
