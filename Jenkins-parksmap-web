@@ -199,8 +199,8 @@ node('maven') {
       println("Content: "+response.content)
       if (response.content.indexOf(endpoint) < 0)
       {
-        currentBuild.result = 'FAILURE'
-        throw new hudson.AbortException('Failed to register service:' + endpoint)
+        #currentBuild.result = 'FAILURE'
+        #throw new hudson.AbortException('Failed to register service:' + endpoint)
       }
 
   }
