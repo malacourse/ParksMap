@@ -1,2 +1,2 @@
 JAR_FILE_LOCATION=http://nexus3-jenkins.192.168.99.100.nip.io/repository/releases/com/openshift/evg/roadshow/parksmap-web/1.0.5/parksmap-web-1.0.5.jar
-BUILD_NUMBER=7
+BUILD_NUMBER=9
