@@ -194,8 +194,8 @@ node('maven') {
         currentBuild.result = 'FAILURE'
         throw new hudson.AbortException('Failed to register service:' + endpoint)
       }
-      def endpoint = "mlbparks-blue-green"
-      def response = httpRequest "http://${svcHost}/ws/backends/register?endpoint=${endpoint}"
+      endpoint = "mlbparks-blue-green"
+      response = httpRequest "http://${svcHost}/ws/backends/register?endpoint=${endpoint}"
       println("Content: "+response.content)
       if (response.content.indexOf(endpoint) < 0)
       {
