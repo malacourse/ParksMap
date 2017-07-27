@@ -1,0 +1,114 @@
+{
+    "kind": "DeploymentConfig",
+    "apiVersion": "v1",
+    "metadata": {
+        "name": "mlbparks-blue",
+        "generation": 1,
+        "creationTimestamp": null,
+        "labels": {
+            "app": "mlbparks-prod"
+        },
+        "annotations": {
+            "openshift.io/generated-by": "OpenShiftWebConsole"
+        }
+    },
+    "spec": {
+        "strategy": {
+            "type": "Rolling",
+            "rollingParams": {
+                "updatePeriodSeconds": 1,
+                "intervalSeconds": 1,
+                "timeoutSeconds": 600,
+                "maxUnavailable": "25%",
+                "maxSurge": "25%"
+            },
+            "resources": {},
+            "activeDeadlineSeconds": 21600
+        },
+        "triggers": [
+            {
+                "type": "ImageChange",
+                "imageChangeParams": {
+                    "containerNames": [
+                        "mlbparks"
+                    ],
+                    "from": {
+                        "kind": "ImageStreamTag",
+                        "namespace": "adv-dev-hw",
+                        "name": "mlbparks:TestReady-1.0.3"
+                    }
+                }
+            }
+        ],
+        "replicas": 1,
+        "test": false,
+        "selector": {
+            "app": "mlbparks",
+            "deploymentconfig": "mlbparks-blue"
+        },
+        "template": {
+            "metadata": {
+                "creationTimestamp": null,
+                "labels": {
+                    "app": "mlbparks-prod",
+                    "deploymentconfig": "mlbparks"
+                },
+                "annotations": {
+                    "openshift.io/generated-by": "OpenShiftWebConsole"
+                }
+            },
+            "spec": {
+                "volumes": [
+                    {
+                        "name": "db-config",
+                        "configMap": {
+                            "name": "parksmap-config",
+                            "defaultMode": 420
+                        }
+                    }
+                ],
+                "containers": [
+                    {
+                        "name": "mlbparks",
+                        "image": "172.30.160.227:5000/adv-dev-hw/mlbparks@sha256:e55a1a1c311c6ffc9c9baa1cebfa287afadffe4ae9a05a7861e60d7a2bcac449",
+                        "ports": [
+                            {
+                                "containerPort": 8080,
+                                "protocol": "TCP"
+                            },
+                            {
+                                "containerPort": 8443,
+                                "protocol": "TCP"
+                            },
+                            {
+                                "containerPort": 8778,
+                                "protocol": "TCP"
+                            }
+                        ],
+                        "resources": {},
+                        "volumeMounts": [
+                            {
+                                "name": "db-config",
+                                "mountPath": "/etc/config"
+                            }
+                        ],
+                        "terminationMessagePath": "/dev/termination-log",
+                        "imagePullPolicy": "Always"
+                    }
+                ],
+                "restartPolicy": "Always",
+                "terminationGracePeriodSeconds": 30,
+                "dnsPolicy": "ClusterFirst",
+                "securityContext": {}
+            }
+        }
+    },
+    "status": {
+        "latestVersion": 0,
+        "observedGeneration": 0,
+        "replicas": 0,
+        "updatedReplicas": 0,
+        "availableReplicas": 0,
+        "unavailableReplicas": 0
+    }
+}

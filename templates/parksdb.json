@@ -1,0 +1,165 @@
+{
+    "kind": "List",
+    "apiVersion": "v1",
+    "metadata": {},
+    "items": [
+        {
+            "apiVersion": "v1",
+            "kind": "Service",
+            "metadata": {
+                "annotations": {
+                    "description": "The database server's port."
+                },
+                "labels": {
+                    "application": "parks-map",
+                    "template": "mongodb-persistent",
+                    "xpaas": "1.3.2",
+                    "svc" : "parksmap-db"
+                },
+                "name": "parks-mongodb"
+            },
+            "spec": {
+                "ports": [
+                    {
+                        "port": 27017,
+                        "targetPort": 27017
+                    }
+                ],
+                "selector": {
+                    "deploymentConfig": "parks-mongodb"
+                }
+            }
+        },
+        {
+            "apiVersion": "v1",
+            "kind": "DeploymentConfig",
+            "metadata": {
+                "labels": {
+                    "application": "parks-map",
+                    "template": "mongodb-persistent",
+                    "svc" : "parksmap-db"
+                },
+                "name": "parks-mongodb"
+            },
+            "spec": {
+                "replicas": 1,
+                "selector": {
+                    "deploymentConfig": "parks-mongodb"
+                },
+                "strategy": {
+                    "type": "Recreate"
+                },
+                "template": {
+                    "metadata": {
+                        "labels": {
+                            "application": "parks-map",
+                            "deploymentConfig": "parks-mongodb"
+                        },
+                        "name": "parks-mongodb"
+                    },
+                    "spec": {
+                        "containers": [
+                            {
+                                "env": [
+                                    {
+                                        "name": "MONGODB_USER",
+                                        "value": "parksuser"
+                                    },
+                                    {
+                                        "name": "MONGODB_PASSWORD",
+                                        "value": "password"
+                                    },
+                                    {
+                                        "name": "MONGODB_DATABASE",
+                                        "value": "parks"
+                                    },
+                                    {
+                                        "name": "MONGODB_ADMIN_PASSWORD",
+                                        "value": "password"
+                                    },
+                                    {
+                                        "name": "MONGODB_NOPREALLOC",
+                                        "value": ""
+                                    },
+                                    {
+                                        "name": "MONGODB_SMALLFILES",
+                                        "value": ""
+                                    },
+                                    {
+                                        "name": "MONGODB_QUIET",
+                                        "value": ""
+                                    }
+                                ],
+                                "image": "mongodb",
+                                "imagePullPolicy": "Always",
+                                "name": "parks-mongodb",
+                                "ports": [
+                                    {
+                                        "containerPort": 27017,
+                                        "protocol": "TCP"
+                                    }
+                                ],
+                                "volumeMounts": [
+                                    {
+                                        "mountPath": "/var/lib/mongodb/data",
+                                        "name": "parks-mongodb-pvol"
+                                    }
+                                ]
+                            }
+                        ],
+                        "terminationGracePeriodSeconds": 60,
+                        "volumes": [
+                            {
+                                "name": "parks-mongodb-pvol",
+                                "persistentVolumeClaim": {
+                                    "claimName": "parks-mongodb-claim"
+                                }
+                            }
+                        ]
+                    }
+                },
+                "triggers": [
+                    {
+                        "imageChangeParams": {
+                            "automatic": true,
+                            "containerNames": [
+                                "parks-mongodb"
+                            ],
+                            "from": {
+                                "kind": "ImageStreamTag",
+                                "name": "mongodbxx:3.2",
+                                "namespace": "openshift"
+                            }
+                        },
+                        "type": "ImageChange"
+                    },
+                    {
+                        "type": "ConfigChange"
+                    }
+                ]
+            }
+        },
+        {
+            "apiVersion": "v1",
+            "kind": "PersistentVolumeClaim",
+            "metadata": {
+                "labels": {
+                    "application": "parks-map",
+                    "template": "mongodb-persistent",
+                    "svc" : "parksmap-db"
+                },
+                "name": "parks-mongodb-claim"
+            },
+            "spec": {
+                "accessModes": [
+                    "ReadWriteOnce"
+                ],
+                "resources": {
+                    "requests": {
+                        "storage": "512Mi"
+                    }
+                }
+            }
+        }
+    ]
+}

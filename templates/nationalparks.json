@@ -1,0 +1,236 @@
+{
+    "kind": "List",
+    "apiVersion": "v1",
+    "metadata": {},
+    "items": [
+        {
+            "apiVersion": "v1",
+            "kind": "Service",
+            "metadata": {
+                "annotations": {
+                    "description": "The web server's http port."
+                },
+                "labels": {
+                    "application": "parks-map",
+                    "template": "nationalparks-template",
+                    "subproject": "natparks"
+                },
+                "name": "nationalparks"
+            },
+            "spec": {
+                "ports": [
+                    {
+                        "port": 8080,
+                        "targetPort": 8080
+                    }
+                ],
+                "selector": {
+                    "deploymentConfig": "nationalparks"
+                }
+            }
+        },
+        {
+            "apiVersion": "v1",
+            "id": "nationalparks-http",
+            "kind": "Route",
+            "metadata": {
+                "annotations": {
+                    "description": "Route for application's http service."
+                },
+                "labels": {
+                    "application": "parks-map",
+                    "template": "nationalparks-template",
+                    "subproject": "natparks"
+                },
+                "name": "nationalparks"
+            },
+            "spec": {
+                "host": "",
+                "to": {
+                    "name": "nationalparks"
+                }
+            }
+        },
+        {
+            "apiVersion": "v1",
+            "kind": "ImageStream",
+            "metadata": {
+                "labels": {
+                    "application": "parks-map",
+                    "template": "nationalparks-template",
+                    "subproject": "natparks"
+                },
+                "name": "nationalparks"
+            }
+        },
+        {
+            "apiVersion": "v1",
+            "kind": "BuildConfig",
+            "metadata": {
+                "labels": {
+                    "application": "parks-map",
+                    "template": "national-parks",
+                    "subproject": "natparks"
+                },
+                "name": "nationalparks"
+            },
+            "spec": {
+                "output": {
+                    "to": {
+                        "kind": "ImageStreamTag",
+                        "name": "nationalparks:latest"
+                    }
+                },
+                "source": {
+                    "contextDir": "/nationalparks",
+                    "git": {
+                        "ref": "master",
+                        "uri": "https://github.com/malacourse/ParksMap.git"
+                    },
+                    "type": "Git"
+                },
+                "strategy": {
+                    "sourceStrategy": {
+                        "forcePull": true,
+                        "from": {
+                            "kind": "ImageStreamTag",
+                            "name": "redhat-opnejdk18:latest",
+                            "namespace": "openshift"
+                        }
+                    },
+                    "type": "Source"
+                },
+                "triggers": [
+                    {
+                        "github": {
+                            "secret": "xVjNvq6k"
+                        },
+                        "type": "GitHub"
+                    },
+                    {
+                        "generic": {
+                            "secret": "6B5Wd2oh"
+                        },
+                        "type": "Generic"
+                    },
+                    {
+                        "imageChange": {},
+                        "type": "ImageChange"
+                    },
+                    {
+                        "type": "ConfigChange"
+                    }
+                ]
+            }
+        },
+        {
+            "apiVersion": "v1",
+            "kind": "DeploymentConfig",
+            "metadata": {
+                "labels": {
+                    "application": "parks-map",
+                    "template": "national-parks",
+                    "subproject": "natparks"
+                },
+                "name": "nationalparks"
+            },
+            "spec": {
+                "replicas": 1,
+                "selector": {
+                    "deploymentConfig": "nationalparks"
+                },
+                "strategy": {
+                    "type": "Recreate"
+                },
+                "template": {
+                    "metadata": {
+                        "labels": {
+                            "application": "parks-map",
+                            "deploymentConfig": "nationalparks"
+                        },
+                        "name": "nationalparks"
+                    },
+                    "spec": {
+                        "containers": [
+                            {
+                                "env": [
+                                    {
+                                        "name": "DB_USERNAME",
+                                        "value": "parksuser"
+                                    },
+                                    {
+                                        "name": "DB_PASSWORD",
+                                        "value": "password"
+                                    },
+                                    {
+                                        "name": "DB_NAME",
+                                        "value": "parks"
+                                    },
+                                    {
+                                        "name": "DB_ADMIN_PASSWORD",
+                                        "value": "password"
+                                    },
+                                    {
+                                        "name": "DB_PORT",
+                                        "value": "27017"
+                                    },
+                                    {
+                                        "name": "DB_HOST",
+                                        "value": "parks-mongodb.adv-dev-hw.svc"
+                                    },
+                                    {
+                                        "name": "AUTO_DEPLOY_EXPLODED",
+                                        "value": "false"
+                                    }
+                                ],
+                                "image": "nationalparks",
+                                "imagePullPolicy": "Always",
+                                "livenessProbe": {
+                                    "exec": {
+                                        "command": [
+                                            "/bin/bash",
+                                            "-c",
+                                            "cat"
+                                        ]
+                                    }
+                                },
+                                "name": "nationalparks",
+                                "ports": [
+                                    {
+                                        "containerPort": 8080,
+                                        "name": "http",
+                                        "protocol": "TCP"
+                                    },
+                                    {
+                                        "containerPort": 8888,
+                                        "name": "ping",
+                                        "protocol": "TCP"
+                                    }
+                                ]
+                            }
+                        ],
+                        "terminationGracePeriodSeconds": 75
+                    }
+                },
+                "triggers": [
+                    {
+                        "imageChangeParams": {
+                            "automatic": true,
+                            "containerNames": [
+                                "nationalparks"
+                            ],
+                            "from": {
+                                "kind": "ImageStreamTag",
+                                "name": "nationalparks:latest"
+                            }
+                        },
+                        "type": "ImageChange"
+                    },
+                    {
+                        "type": "ConfigChange"
+                    }
+                ]
+            }
+        }
+    ]
+}

@@ -1,0 +1,212 @@
+{
+    "kind": "List",
+    "apiVersion": "v1",
+    "metadata": {},
+    "items": [
+        {
+            "apiVersion": "v1",
+            "kind": "Service",
+            "metadata": {
+                "annotations": {
+                    "description": "The web server's http port."
+                },
+                "labels": {
+                    "application": "parks-map",
+                    "template": "parksmap-web-template",
+                    "subproject": "natparks"
+                },
+                "name": "parksmap-web"
+            },
+            "spec": {
+                "ports": [
+                    {
+                        "port": 8080,
+                        "targetPort": 8080
+                    }
+                ],
+                "selector": {
+                    "deploymentConfig": "parksmap-web"
+                }
+            }
+        },
+        {
+            "apiVersion": "v1",
+            "id": "parksmap-web-http",
+            "kind": "Route",
+            "metadata": {
+                "annotations": {
+                    "description": "Route for application's http service."
+                },
+                "labels": {
+                    "application": "parks-map",
+                    "template": "parksmap-web-template",
+                    "subproject": "natparks"
+                },
+                "name": "parksmap-web"
+            },
+            "spec": {
+                "host": "",
+                "to": {
+                    "name": "parksmap-web"
+                }
+            }
+        },
+        {
+            "apiVersion": "v1",
+            "kind": "ImageStream",
+            "metadata": {
+                "labels": {
+                    "application": "parks-map",
+                    "template": "parksmap-web-template",
+                    "subproject": "natparks"
+                },
+                "name": "parksmap-web"
+            }
+        },
+        {
+            "apiVersion": "v1",
+            "kind": "BuildConfig",
+            "metadata": {
+                "labels": {
+                    "application": "parks-map",
+                    "template": "parksmap-web-template",
+                    "subproject": "natparks"
+                },
+                "name": "parksmap-web"
+            },
+            "spec": {
+                "output": {
+                    "to": {
+                        "kind": "ImageStreamTag",
+                        "name": "parksmap-web:latest"
+                    }
+                },
+                "source": {
+                    "contextDir": "/parksmap-web",
+                    "git": {
+                        "ref": "master",
+                        "uri": "https://github.com/malacourse/ParksMap.git"
+                    },
+                    "type": "Git"
+                },
+                "strategy": {
+                    "sourceStrategy": {
+                        "forcePull": true,
+                        "from": {
+                            "kind": "ImageStreamTag",
+                            "name": "redhat-opnejdk18:latest",
+                            "namespace": "openshift"
+                        }
+                    },
+                    "type": "Source"
+                },
+                "triggers": [
+                    {
+                        "github": {
+                            "secret": "xVjNvq6k"
+                        },
+                        "type": "GitHub"
+                    },
+                    {
+                        "generic": {
+                            "secret": "6B5Wd2oh"
+                        },
+                        "type": "Generic"
+                    },
+                    {
+                        "imageChange": {},
+                        "type": "ImageChange"
+                    },
+                    {
+                        "type": "ConfigChange"
+                    }
+                ]
+            }
+        },
+        {
+            "apiVersion": "v1",
+            "kind": "DeploymentConfig",
+            "metadata": {
+                "labels": {
+                    "application": "parks-map",
+                    "template": "parksmap-web-template",
+                    "subproject": "natparks"
+                },
+                "name": "parksmap-web"
+            },
+            "spec": {
+                "replicas": 1,
+                "selector": {
+                    "deploymentConfig": "parksmap-web"
+                },
+                "strategy": {
+                    "type": "Recreate"
+                },
+                "template": {
+                    "metadata": {
+                        "labels": {
+                            "application": "parks-map",
+                            "deploymentConfig": "parksmap-web"
+                        },
+                        "name": "parksmap-web"
+                    },
+                    "spec": {
+                        "containers": [
+                            {
+                                "env": [
+                                    {
+                                        "name": "AUTO_DEPLOY_EXPLODED",
+                                        "value": "false"
+                                    }
+                                ],
+                                "image": "parksmap-web",
+                                "imagePullPolicy": "Always",
+                                "livenessProbe": {
+                                    "exec": {
+                                        "command": [
+                                            "/bin/bash",
+                                            "-c",
+                                            "cat"
+                                        ]
+                                    }
+                                },
+                                "name": "parksmap-web",
+                                "ports": [
+                                    {
+                                        "containerPort": 8080,
+                                        "name": "http",
+                                        "protocol": "TCP"
+                                    },
+                                    {
+                                        "containerPort": 8888,
+                                        "name": "ping",
+                                        "protocol": "TCP"
+                                    }
+                                ]
+                            }
+                        ],
+                        "terminationGracePeriodSeconds": 75
+                    }
+                },
+                "triggers": [
+                    {
+                        "imageChangeParams": {
+                            "automatic": true,
+                            "containerNames": [
+                                "parksmap-web"
+                            ],
+                            "from": {
+                                "kind": "ImageStreamTag",
+                                "name": "parksmap-web:latest"
+                            }
+                        },
+                        "type": "ImageChange"
+                    },
+                    {
+                        "type": "ConfigChange"
+                    }
+                ]
+            }
+        }
+    ]
+}
